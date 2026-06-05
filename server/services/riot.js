@@ -1,10 +1,28 @@
 const API_KEY = process.env.RIOT_API_KEY?.trim();
 
-async function riotGet(url) {
+const PLATFORM_CONTINENT = {
+  euw1: 'europe', eun1: 'europe', tr1: 'europe', ru: 'europe',
+  na1: 'americas', br1: 'americas', la1: 'americas', la2: 'americas',
+  kr: 'asia', jp1: 'asia',
+  oc1: 'sea',
+};
+
+function continentOf(platform) {
+  return PLATFORM_CONTINENT[platform] ?? 'europe';
+}
+
+async function riotGet(url, retries = 1) {
   console.log(`[riot] GET ${url}`);
   const res = await fetch(url, { headers: { 'X-Riot-Token': API_KEY } });
   const text = await res.text();
   console.log(`[riot] ${res.status} — ${text.slice(0, 200)}`);
+
+  if (res.status === 429 && retries > 0) {
+    const wait = parseInt(res.headers.get('Retry-After') || '1') * 1000;
+    console.log(`[riot] rate limited — retrying in ${wait}ms`);
+    await new Promise(r => setTimeout(r, wait));
+    return riotGet(url, retries - 1);
+  }
 
   let data;
   try {
@@ -25,35 +43,82 @@ async function riotGet(url) {
   return data;
 }
 
-async function getSummonerData(gameName, tagLine) {
-  // 1. PUUID
-  const account = await riotGet(
-    `https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
-  );
+// Core profile fetch — starts from a known PUUID
+async function fetchProfileFromPuuid(puuid, region = 'europe', platform = 'euw1', includeMatches = true) {
+  const [account, summoner, ranked] = await Promise.all([
+    riotGet(`https://${region}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${encodeURIComponent(puuid)}`),
+    riotGet(`https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(puuid)}`),
+    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`),
+  ]);
 
-  // 2. Summoner profile (level, iconId, summonerId)
-  const summoner = await riotGet(
-    `https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/${encodeURIComponent(account.puuid)}`
-  );
+  if (!includeMatches) return { account, summoner, ranked, matches: [] };
 
-  // 3. Ranked data
-  const ranked = await riotGet(
-    `https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(account.puuid)}`
-  );
-
-  // 4. Last 5 match IDs
   const matchIds = await riotGet(
-    `https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(account.puuid)}/ids?count=5`
+    `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=5`
   );
 
-  // 5. Match details
   const matches = await Promise.all(
-    matchIds.map(id =>
-      riotGet(`https://europe.api.riotgames.com/lol/match/v5/matches/${id}`)
-    )
+    matchIds.map(id => riotGet(`https://${region}.api.riotgames.com/lol/match/v5/matches/${id}`))
   );
 
   return { account, summoner, ranked, matches };
 }
 
-module.exports = { getSummonerData };
+// Entry point when searching by Riot ID (gameName#tagLine)
+async function getSummonerData(gameName, tagLine, region = 'europe', platform = 'euw1', includeMatches = true) {
+  const { puuid } = await riotGet(
+    `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
+  );
+  return fetchProfileFromPuuid(puuid, region, platform, includeMatches);
+}
+
+// Entry point when searching by PUUID (from leaderboard)
+async function getSummonerDataByPuuid(puuid, region = 'europe', platform = 'euw1', includeMatches = true) {
+  return fetchProfileFromPuuid(puuid, region, platform, includeMatches);
+}
+
+// Returns all Challenger + Grandmaster entries sorted by LP
+async function getTopLeaderboard(platform = 'euw1') {
+  const [challenger, grandmaster] = await Promise.all([
+    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`),
+    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5`),
+  ]);
+
+  return [
+    ...challenger.entries.map(e => ({ ...e, tier: 'CHALLENGER' })),
+    ...grandmaster.entries.map(e => ({ ...e, tier: 'GRANDMASTER' })),
+  ].sort((a, b) => b.leaguePoints - a.leaguePoints);
+}
+
+// Returns one page of Master entries (~205 per page) sorted by LP
+async function getMasterLeaderboard(page = 1, platform = 'euw1') {
+  const entries = await riotGet(
+    `https://${platform}.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/MASTER/I?page=${page}`
+  );
+  return entries
+    .map(e => ({ ...e, tier: 'MASTER' }))
+    .sort((a, b) => b.leaguePoints - a.leaguePoints);
+}
+
+async function getMatches(puuid, region = 'europe', queueId = null, count = 5) {
+  let url = `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=${count}`;
+  if (queueId) url += `&queue=${queueId}`;
+  const matchIds = await riotGet(url);
+  return Promise.all(
+    matchIds.map(id => riotGet(`https://${region}.api.riotgames.com/lol/match/v5/matches/${id}`))
+  );
+}
+
+async function getSummonerById(summonerId, platform = 'euw1') {
+  return riotGet(
+    `https://${platform}.api.riotgames.com/lol/summoner/v4/summoners/${encodeURIComponent(summonerId)}`
+  );
+}
+
+async function getAccountByPuuid(puuid, region = 'europe') {
+  return riotGet(
+    `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-puuid/${encodeURIComponent(puuid)}`
+  );
+}
+
+module.exports = { getSummonerData, getSummonerDataByPuuid, getTopLeaderboard, getMasterLeaderboard, getAccountByPuuid, getMatches, getSummonerById, continentOf };

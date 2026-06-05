@@ -8,12 +8,16 @@ export default function TeamCard({ team }) {
 
   async function loadPlayers() {
     setLoading(true);
-    const results = await Promise.allSettled(
-      team.players.map(id => {
-        const [gameName, tagLine] = id.split('#');
-        return fetchSummoner(gameName, tagLine);
-      })
-    );
+    const results = [];
+    for (const id of team.players) {
+      const [gameName, tagLine] = id.split('#');
+      try {
+        const data = await fetchSummoner(gameName, tagLine, team.region, team.platform, false);
+        results.push({ status: 'fulfilled', value: data });
+      } catch (err) {
+        results.push({ status: 'rejected', reason: err });
+      }
+    }
     setPlayers(results);
     setLoaded(true);
     setLoading(false);
@@ -36,13 +40,21 @@ export default function TeamCard({ team }) {
 
       {loaded && (
         <ul className="player-list">
-          {players.map((result, i) => (
-            <li key={team.players[i]}>
-              {result.status === 'fulfilled'
-                ? `${result.value.account.gameName} — Lvl ${result.value.summoner.summonerLevel}`
-                : `${team.players[i]} — not found`}
-            </li>
-          ))}
+          {players.map((result, i) => {
+            if (result.status !== 'fulfilled') {
+              return <li key={team.players[i]}>{team.players[i]} — not found</li>;
+            }
+            const { account, summoner, ranked } = result.value;
+            const soloQ = ranked.find(e => e.queueType === 'RANKED_SOLO_5x5');
+            const rankStr = soloQ
+              ? `${soloQ.tier} ${soloQ.rank} ${soloQ.leaguePoints}LP`
+              : 'Unranked';
+            return (
+              <li key={team.players[i]}>
+                {account.gameName}#{account.tagLine} — Lvl {summoner.summonerLevel} — {rankStr}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -28,9 +28,11 @@ export default function SummonerCard({ data }) {
       </div>
 
       <div className="match-list">
-        {matches.map(match => (
-          <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} />
-        ))}
+        {matches.length === 0
+          ? <p>No matches found for this mode.</p>
+          : matches.map(match => (
+              <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} />
+            ))}
       </div>
     </div>
   );
