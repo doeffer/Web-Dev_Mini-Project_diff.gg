@@ -1,3 +1,9 @@
+export async function fetchDDragonVersion() {
+  const res = await fetch('/api/ddragon-version');
+  const data = await res.json();
+  return data.version;
+}
+
 export async function fetchNames(puuids, region = 'europe') {
   const res = await fetch('/api/names', {
     method: 'POST',
