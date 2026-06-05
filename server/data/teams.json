@@ -1,0 +1,39 @@
+[
+  {
+    "id": "seed-1",
+    "name": "T1",
+    "region": "KR",
+    "platform": "kr",
+    "continent": "asia",
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/en/6/6e/T1_logo.png",
+    "roster": {
+      "top": "Zeus#KR1",
+      "jungle": "Oner#KR1",
+      "mid": "Faker#KR1",
+      "bot": "Gumayusi#KR1",
+      "support": "Keria#KR1",
+      "substitute": null,
+      "coach": "Polt"
+    }
+  },
+  {
+    "id": "1780702124677",
+    "name": "Chamoy",
+    "region": "EUW",
+    "platform": "euw1",
+    "continent": "europe",
+    "logoUrl": "",
+    "roster": {
+      "top": "Komfuret#euw",
+      "jungle": "fryseren#Mango",
+      "mid": "lasopp#Mango",
+      "bot": "døffer#1111",
+      "support": "cat burger#6350",
+      "substitute": {
+        "riotId": "kceb#2626",
+        "role": "support"
+      },
+      "coach": "Enimicus#Mogus"
+    }
+  }
+]

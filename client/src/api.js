@@ -1,3 +1,28 @@
+export async function fetchTeams() {
+  const res = await fetch('/api/teams');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch teams.');
+  return data;
+}
+
+export async function createTeam(team) {
+  const res = await fetch('/api/teams', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(team),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to create team.');
+  return data;
+}
+
+export async function deleteTeam(id) {
+  const res = await fetch(`/api/teams/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete team.');
+  return data;
+}
+
 export async function fetchDDragonVersion() {
   const res = await fetch('/api/ddragon-version');
   const data = await res.json();
