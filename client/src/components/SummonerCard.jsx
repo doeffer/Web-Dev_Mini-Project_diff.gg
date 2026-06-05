@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
 import MatchRow from './MatchRow';
-import { fetchDDragonVersion } from '../api';
+import { getDDVersion } from '../utils/gameData';
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
 const CDRAGON_EMBLEMS = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem';
-
-let ddVersionCache = null;
-async function getDDVersion() {
-  if (!ddVersionCache) ddVersionCache = fetchDDragonVersion();
-  return ddVersionCache;
-}
 
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -50,7 +44,7 @@ function RankCard({ entry, label }) {
   );
 }
 
-export default function SummonerCard({ data }) {
+export default function SummonerCard({ data, platform = 'euw1' }) {
   const { account, summoner, ranked, matches } = data;
   const [ddVersion, setDDVersion] = useState('15.10.1');
   useEffect(() => { getDDVersion().then(setDDVersion); }, []);
@@ -84,7 +78,7 @@ export default function SummonerCard({ data }) {
         {matches.length === 0
           ? <p>No matches found for this mode.</p>
           : matches.map(match => (
-              <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} />
+              <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} platform={platform} />
             ))}
       </div>
     </div>

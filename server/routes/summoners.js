@@ -20,7 +20,11 @@ router.post('/summoner', async (req, res) => {
     }
     res.json(data);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    const status = err.status || 500;
+    const message = status === 404
+      ? 'Summoner not found. Check the Riot ID and selected region.'
+      : err.message;
+    res.status(status).json({ error: message });
   }
 });
 

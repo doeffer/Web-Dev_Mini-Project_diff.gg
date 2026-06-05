@@ -196,7 +196,7 @@ export default function SearchPage() {
             </select>
           </div>
           {matchesLoading && <p>Loading matches…</p>}
-          <SummonerCard data={data} />
+          <SummonerCard data={data} platform={platform} />
         </>
       )}
     </main>
