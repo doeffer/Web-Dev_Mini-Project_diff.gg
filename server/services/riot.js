@@ -121,4 +121,26 @@ async function getAccountByPuuid(puuid, region = 'europe') {
   );
 }
 
-module.exports = { getSummonerData, getSummonerDataByPuuid, getTopLeaderboard, getMasterLeaderboard, getAccountByPuuid, getMatches, getSummonerById, continentOf };
+async function getChampionMastery(puuid, platform = 'euw1') {
+  return riotGet(
+    `https://${platform}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/${encodeURIComponent(puuid)}`
+  );
+}
+
+async function getLiveGame(puuid, platform = 'euw1') {
+  try {
+    return await riotGet(
+      `https://${platform}.api.riotgames.com/lol/spectator/v5/active-games/by-puuid/${encodeURIComponent(puuid)}`
+    );
+  } catch (err) {
+    if (err.status === 404) return null;
+    if (err.status === 403) {
+      const e = new Error('Spectator data requires a production API key. Development keys do not have access to this endpoint.');
+      e.status = 403;
+      throw e;
+    }
+    throw err;
+  }
+}
+
+module.exports = { getSummonerData, getSummonerDataByPuuid, getTopLeaderboard, getMasterLeaderboard, getAccountByPuuid, getMatches, getSummonerById, getChampionMastery, getLiveGame, continentOf };

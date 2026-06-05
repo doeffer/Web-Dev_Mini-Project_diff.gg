@@ -87,6 +87,23 @@ export function getRuneMap() {
   return _runeMapPromise;
 }
 
+let _champIdMapPromise = null;
+export function getChampionIdMap() {
+  if (!_champIdMapPromise) {
+    _champIdMapPromise = getDDVersion().then(version =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`)
+        .then(r => r.json())
+        .then(json => {
+          const map = {};
+          for (const champ of Object.values(json.data))
+            map[parseInt(champ.key)] = { id: champ.id, name: champ.name };
+          return map;
+        })
+    );
+  }
+  return _champIdMapPromise;
+}
+
 export function timeAgo(ms) {
   const diff = Date.now() - ms;
   const mins = Math.floor(diff / 60000);

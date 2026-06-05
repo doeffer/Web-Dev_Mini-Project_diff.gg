@@ -46,6 +46,7 @@ export default function SearchPage() {
   const [matchOffset, setMatchOffset] = useState(0);
   const [hasMoreMatches, setHasMoreMatches] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
   const profileRef = useRef(null);
   const mountedRef = useRef(true);
@@ -59,6 +60,7 @@ export default function SearchPage() {
     setQueueFilter(null);
     setMatchOffset(result.matches.length);
     setHasMoreMatches(result.matches.length >= 20);
+    setActiveTab('overview');
     setData(result);
   }
 
@@ -193,35 +195,44 @@ export default function SearchPage() {
 
       {data && (
         <>
-          <div className="queue-filters">
-            {QUICK_FILTERS.map(({ label, queue }) => (
-              <button
-                key={label}
-                className={queueFilter === queue ? 'active' : ''}
-                onClick={() => applyFilter(queue)}
-                disabled={matchesLoading}
-              >
-                {label}
-              </button>
-            ))}
-            <select
-              value={isMoreMode ? queueFilter : ''}
-              onChange={e => {
-                const val = e.target.value;
-                if (val !== '') applyFilter(Number(val));
-              }}
-              disabled={matchesLoading}
-              className={isMoreMode ? 'active' : ''}
-            >
-              <option value="">More modes…</option>
-              {MORE_MODES.map(({ label, queue }) => (
-                <option key={queue} value={queue}>{label}</option>
-              ))}
-            </select>
-          </div>
-          {matchesLoading && <p>Loading matches…</p>}
-          <SummonerCard data={data} platform={platform} />
-          {hasMoreMatches && (
+          {activeTab === 'overview' && (
+            <>
+              <div className="queue-filters">
+                {QUICK_FILTERS.map(({ label, queue }) => (
+                  <button
+                    key={label}
+                    className={queueFilter === queue ? 'active' : ''}
+                    onClick={() => applyFilter(queue)}
+                    disabled={matchesLoading}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <select
+                  value={isMoreMode ? queueFilter : ''}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val !== '') applyFilter(Number(val));
+                  }}
+                  disabled={matchesLoading}
+                  className={isMoreMode ? 'active' : ''}
+                >
+                  <option value="">More modes…</option>
+                  {MORE_MODES.map(({ label, queue }) => (
+                    <option key={queue} value={queue}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              {matchesLoading && <p>Loading matches…</p>}
+            </>
+          )}
+          <SummonerCard
+            data={data}
+            platform={platform}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+          {activeTab === 'overview' && hasMoreMatches && (
             <button onClick={loadMoreMatches} disabled={loadingMore || matchesLoading}>
               {loadingMore ? 'Loading…' : 'Load 20 more'}
             </button>

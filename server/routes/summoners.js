@@ -1,5 +1,5 @@
 const express = require('express');
-const { getSummonerData, getSummonerDataByPuuid, getMatches } = require('../services/riot');
+const { getSummonerData, getSummonerDataByPuuid, getMatches, getChampionMastery, getLiveGame } = require('../services/riot');
 
 const router = express.Router();
 
@@ -35,6 +35,30 @@ router.post('/matches', async (req, res) => {
   try {
     const matches = await getMatches(puuid, region, queueId, 20, start);
     res.json(matches);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// GET /api/mastery?puuid=&platform=
+router.get('/mastery', async (req, res) => {
+  const { puuid, platform = 'euw1' } = req.query;
+  if (!puuid) return res.status(400).json({ error: 'puuid is required.' });
+  try {
+    const mastery = await getChampionMastery(puuid, platform);
+    res.json(mastery);
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// GET /api/live?puuid=&platform=
+router.get('/live', async (req, res) => {
+  const { puuid, platform = 'euw1' } = req.query;
+  if (!puuid) return res.status(400).json({ error: 'puuid is required.' });
+  try {
+    const game = await getLiveGame(puuid, platform);
+    res.json(game); // null when not in a game
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

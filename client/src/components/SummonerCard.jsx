@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import MatchRow from './MatchRow';
 import MatchOverview from './MatchOverview';
+import ChampionMastery from './ChampionMastery';
+import LiveGame from './LiveGame';
 import { getDDVersion } from '../utils/gameData';
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
@@ -45,7 +47,7 @@ function RankCard({ entry, label }) {
   );
 }
 
-export default function SummonerCard({ data, platform = 'euw1' }) {
+export default function SummonerCard({ data, platform = 'euw1', activeTab = 'overview', onTabChange }) {
   const { account, summoner, ranked, matches } = data;
   const [ddVersion, setDDVersion] = useState('15.10.1');
   useEffect(() => { getDDVersion().then(setDDVersion); }, []);
@@ -75,15 +77,42 @@ export default function SummonerCard({ data, platform = 'euw1' }) {
         </div>
       </div>
 
-      <MatchOverview matches={matches} puuid={account.puuid} />
-
-      <div className="match-list">
-        {matches.length === 0
-          ? <p>No matches found for this mode.</p>
-          : matches.map(match => (
-              <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} platform={platform} />
-            ))}
+      <div className="profile-tabs">
+        {[
+          { key: 'overview', label: 'Overview' },
+          { key: 'mastery',  label: 'Champion Mastery' },
+          { key: 'live',     label: 'Live Game' },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            className={activeTab === key ? 'active' : ''}
+            onClick={() => onTabChange?.(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'overview' && (
+        <>
+          <MatchOverview matches={matches} puuid={account.puuid} />
+          <div className="match-list">
+            {matches.length === 0
+              ? <p>No matches found for this mode.</p>
+              : matches.map(match => (
+                  <MatchRow key={match.metadata.matchId} match={match} puuid={account.puuid} platform={platform} />
+                ))}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'mastery' && (
+        <ChampionMastery puuid={account.puuid} platform={platform} />
+      )}
+
+      {activeTab === 'live' && (
+        <LiveGame puuid={account.puuid} platform={platform} />
+      )}
     </div>
   );
 }

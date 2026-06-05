@@ -55,6 +55,20 @@ export function fetchSummonerByPuuid(puuid, region = 'europe', platform = 'euw1'
   return postSummoner({ puuid, region, platform, includeMatches });
 }
 
+export async function fetchChampionMastery(puuid, platform = 'euw1') {
+  const res = await fetch(`/api/mastery?puuid=${encodeURIComponent(puuid)}&platform=${platform}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch mastery.');
+  return data;
+}
+
+export async function fetchLiveGame(puuid, platform = 'euw1') {
+  const res = await fetch(`/api/live?puuid=${encodeURIComponent(puuid)}&platform=${platform}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch live game.');
+  return data; // null when not in a game
+}
+
 export async function fetchMatches(puuid, region = 'europe', queueId = null, start = 0) {
   const res = await fetch('/api/matches', {
     method: 'POST',
