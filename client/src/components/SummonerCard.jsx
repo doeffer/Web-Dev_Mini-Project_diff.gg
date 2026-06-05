@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import MatchRow from './MatchRow';
+import MatchOverview from './MatchOverview';
 import { getDDVersion } from '../utils/gameData';
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
@@ -73,6 +74,8 @@ export default function SummonerCard({ data, platform = 'euw1' }) {
           <RankCard entry={flexQ}  label="Flex" />
         </div>
       </div>
+
+      <MatchOverview matches={matches} puuid={account.puuid} />
 
       <div className="match-list">
         {matches.length === 0
