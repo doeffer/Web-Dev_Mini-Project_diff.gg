@@ -43,6 +43,9 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [queueFilter, setQueueFilter] = useState(null);
   const [matchesLoading, setMatchesLoading] = useState(false);
+  const [matchOffset, setMatchOffset] = useState(0);
+  const [hasMoreMatches, setHasMoreMatches] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const profileRef = useRef(null);
   const mountedRef = useRef(true);
@@ -54,6 +57,8 @@ export default function SearchPage() {
   function applyNewData(result, activeContinent) {
     profileRef.current = { puuid: result.account.puuid, continent: activeContinent };
     setQueueFilter(null);
+    setMatchOffset(result.matches.length);
+    setHasMoreMatches(result.matches.length >= 20);
     setData(result);
   }
 
@@ -134,10 +139,29 @@ export default function SearchPage() {
     if (!ctx) return;
     setMatchesLoading(true);
     try {
-      const matches = await fetchMatches(ctx.puuid, ctx.continent, queue);
-      if (mountedRef.current) setData(prev => prev ? { ...prev, matches } : null);
+      const matches = await fetchMatches(ctx.puuid, ctx.continent, queue, 0);
+      if (mountedRef.current) {
+        setData(prev => prev ? { ...prev, matches } : null);
+        setMatchOffset(matches.length);
+        setHasMoreMatches(matches.length >= 20);
+      }
     } catch {}
     finally { if (mountedRef.current) setMatchesLoading(false); }
+  }
+
+  async function loadMoreMatches() {
+    const ctx = profileRef.current;
+    if (!ctx) return;
+    setLoadingMore(true);
+    try {
+      const newMatches = await fetchMatches(ctx.puuid, ctx.continent, queueFilter, matchOffset);
+      if (mountedRef.current) {
+        setData(prev => prev ? { ...prev, matches: [...prev.matches, ...newMatches] } : null);
+        setMatchOffset(prev => prev + newMatches.length);
+        setHasMoreMatches(newMatches.length >= 20);
+      }
+    } catch {}
+    finally { if (mountedRef.current) setLoadingMore(false); }
   }
 
   const isMoreMode = MORE_MODES.some(m => m.queue === queueFilter);
@@ -197,6 +221,11 @@ export default function SearchPage() {
           </div>
           {matchesLoading && <p>Loading matches…</p>}
           <SummonerCard data={data} platform={platform} />
+          {hasMoreMatches && (
+            <button onClick={loadMoreMatches} disabled={loadingMore || matchesLoading}>
+              {loadingMore ? 'Loading…' : 'Load 20 more'}
+            </button>
+          )}
         </>
       )}
     </main>

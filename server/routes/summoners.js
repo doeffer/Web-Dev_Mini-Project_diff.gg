@@ -30,10 +30,10 @@ router.post('/summoner', async (req, res) => {
 
 // POST /api/matches  { puuid, region?, queueId? }
 router.post('/matches', async (req, res) => {
-  const { puuid, region = 'europe', queueId = null } = req.body;
+  const { puuid, region = 'europe', queueId = null, start = 0 } = req.body;
   if (!puuid) return res.status(400).json({ error: 'puuid is required.' });
   try {
-    const matches = await getMatches(puuid, region, queueId);
+    const matches = await getMatches(puuid, region, queueId, 20, start);
     res.json(matches);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });

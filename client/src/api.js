@@ -55,11 +55,11 @@ export function fetchSummonerByPuuid(puuid, region = 'europe', platform = 'euw1'
   return postSummoner({ puuid, region, platform, includeMatches });
 }
 
-export async function fetchMatches(puuid, region = 'europe', queueId = null) {
+export async function fetchMatches(puuid, region = 'europe', queueId = null, start = 0) {
   const res = await fetch('/api/matches', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ puuid, region, queueId }),
+    body: JSON.stringify({ puuid, region, queueId, start }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to fetch matches.');

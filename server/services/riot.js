@@ -54,7 +54,7 @@ async function fetchProfileFromPuuid(puuid, region = 'europe', platform = 'euw1'
   if (!includeMatches) return { account, summoner, ranked, matches: [] };
 
   const matchIds = await riotGet(
-    `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=5`
+    `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=20`
   );
 
   const matches = await Promise.all(
@@ -100,8 +100,8 @@ async function getMasterLeaderboard(page = 1, platform = 'euw1') {
     .sort((a, b) => b.leaguePoints - a.leaguePoints);
 }
 
-async function getMatches(puuid, region = 'europe', queueId = null, count = 5) {
-  let url = `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?count=${count}`;
+async function getMatches(puuid, region = 'europe', queueId = null, count = 20, start = 0) {
+  let url = `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${encodeURIComponent(puuid)}/ids?start=${start}&count=${count}`;
   if (queueId) url += `&queue=${queueId}`;
   const matchIds = await riotGet(url);
   return Promise.all(
