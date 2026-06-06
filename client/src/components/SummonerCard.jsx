@@ -4,6 +4,7 @@ import MatchOverview from './MatchOverview';
 import ChampionMastery from './ChampionMastery';
 import LiveGame from './LiveGame';
 import { getDDVersion } from '../utils/gameData';
+import { fetchApexRank } from '../api';
 
 const DDRAGON = 'https://ddragon.leagueoflegends.com';
 const CDRAGON_EMBLEMS = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem';
@@ -54,8 +55,26 @@ export default function SummonerCard({ data, platform = 'euw1', activeTab = 'ove
   const [ddVersion, setDDVersion] = useState('15.10.1');
   const [masteryMounted, setMasteryMounted] = useState(false);
   const [liveMounted,    setLiveMounted]    = useState(false);
+  const [apexRanks, setApexRanks] = useState({});
 
   useEffect(() => { getDDVersion().then(setDDVersion); }, []);
+
+  useEffect(() => {
+    const apexTiers = ['CHALLENGER', 'GRANDMASTER', 'MASTER'];
+    const apexEntries = ranked.filter(e => apexTiers.includes(e.tier));
+    if (!apexEntries.length) return;
+    Promise.all(
+      apexEntries.map(e =>
+        fetchApexRank(account.puuid, e.queueType, platform)
+          .then(result => ({ queueType: e.queueType, result }))
+          .catch(() => null)
+      )
+    ).then(results => {
+      const map = {};
+      results.forEach(r => { if (r?.result) map[r.queueType] = r.result; });
+      setApexRanks(map);
+    });
+  }, [summoner.id, platform]);
   useEffect(() => {
     if (activeTab === 'mastery') setMasteryMounted(true);
     if (activeTab === 'live')    setLiveMounted(true);
@@ -66,20 +85,21 @@ export default function SummonerCard({ data, platform = 'euw1', activeTab = 'ove
 
   return (
     <div className="summoner-card">
-      <div className="summoner-header">
-        <img
-          src={`${DDRAGON}/cdn/${ddVersion}/img/profileicon/${summoner.profileIconId}.png`}
-          alt="Profile icon"
-          className="profile-icon"
-        />
-        <div>
-          <h2>{account.gameName}<span className="tag">#{account.tagLine}</span></h2>
-          <p>Level {summoner.summonerLevel}</p>
+      <div className="profile-row">
+        <div className="summoner-header">
+          <img
+            src={`${DDRAGON}/cdn/${ddVersion}/img/profileicon/${summoner.profileIconId}.png`}
+            alt="Profile icon"
+            className="profile-icon"
+          />
+          <div>
+            <h2>{account.gameName}<span className="tag">#{account.tagLine}</span></h2>
+            <p>Level {summoner.summonerLevel}</p>
+            {apexRanks['RANKED_SOLO_5x5'] && <p className="apex-rank">Rank {apexRanks['RANKED_SOLO_5x5'].rank} Solo/Duo</p>}
+            {apexRanks['RANKED_FLEX_SR']  && <p className="apex-rank">Rank {apexRanks['RANKED_FLEX_SR'].rank} Flex</p>}
+          </div>
         </div>
-      </div>
 
-      <div className="ranked-section">
-        <h3>Ranked</h3>
         <div className="rank-cards">
           <RankCard entry={soloQ} label="Solo / Duo" />
           <RankCard entry={flexQ}  label="Flex" />

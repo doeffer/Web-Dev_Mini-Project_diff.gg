@@ -47,15 +47,15 @@ export async function fetchRandomPlayer(platform = 'euw1') {
   return data; // { puuid, platform }
 }
 
-export async function fetchLeaderboardTop(platform = 'euw1') {
-  const res = await fetch(`/api/leaderboard/top?platform=${platform}`);
+export async function fetchLeaderboardTop(platform = 'euw1', queue = 'RANKED_SOLO_5x5') {
+  const res = await fetch(`/api/leaderboard/top?platform=${platform}&queue=${queue}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to load leaderboard.');
   return data;
 }
 
-export async function fetchLeaderboardMaster(platform = 'euw1', page = 1) {
-  const res = await fetch(`/api/leaderboard/master?platform=${platform}&page=${page}`);
+export async function fetchLeaderboardMaster(platform = 'euw1', page = 1, queue = 'RANKED_SOLO_5x5') {
+  const res = await fetch(`/api/leaderboard/master?platform=${platform}&page=${page}&queue=${queue}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to load master entries.');
   return data;
@@ -92,6 +92,14 @@ export async function fetchLiveGame(puuid, platform = 'euw1') {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to fetch live game.');
   return data; // null when not in a game
+}
+
+export async function fetchApexRank(puuid, queue, platform) {
+  const params = new URLSearchParams({ puuid, queue, platform });
+  const res = await fetch(`/api/apex-rank?${params}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch apex rank.');
+  return data; // { rank, tier } or null
 }
 
 export async function fetchMatches(puuid, region = 'europe', queueId = null, start = 0) {

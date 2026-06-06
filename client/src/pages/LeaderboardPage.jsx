@@ -20,24 +20,32 @@ const PLATFORMS = [
   { value: 'oc1',  label: 'OCE'  },
 ];
 
-// Per-platform cache — survives navigation, cleared on hard refresh
+const QUEUES = [
+  { value: 'RANKED_SOLO_5x5', label: 'Solo/Duo' },
+  { value: 'RANKED_FLEX_SR',  label: 'Flex'      },
+];
+
 const caches = {};
 let lastPlatform = 'euw1';
-function getCache(platform) {
-  if (!caches[platform]) {
-    caches[platform] = {
+let lastQueue    = 'RANKED_SOLO_5x5';
+
+function getCache(platform, queue) {
+  const key = `${platform}:${queue}`;
+  if (!caches[key]) {
+    caches[key] = {
       entries: [], names: {}, namesLoaded: 0, nameOffset: 0,
       nextBatchTime: 0, displayed: PAGE_SIZE,
       masterPage: 0, hasMore: true, fetched: false,
     };
   }
-  return caches[platform];
+  return caches[key];
 }
 
 export default function LeaderboardPage() {
   const [platform, setPlatform] = useState(lastPlatform);
+  const [queue,    setQueue]    = useState(lastQueue);
 
-  const c = getCache(platform);
+  const c = getCache(platform, queue);
   const [entries, setEntries]         = useState(c.entries);
   const [names, setNames]             = useState(c.names);
   const [namesLoaded, setNamesLoaded] = useState(c.namesLoaded);
@@ -55,9 +63,8 @@ export default function LeaderboardPage() {
 
   useEffect(() => { entriesRef.current = entries; }, [entries]);
 
-  // When platform changes: sync all state from that platform's cache
   useEffect(() => {
-    const nc = getCache(platform);
+    const nc = getCache(platform, queue);
     entriesRef.current = nc.entries;
     setEntries(nc.entries);
     setNames(nc.names);
@@ -68,13 +75,12 @@ export default function LeaderboardPage() {
     setLoading(!nc.fetched);
     setLoadingNames(false);
     setError(null);
-  }, [platform]);
+  }, [platform, queue]);
 
-  // Initial fetch for this platform
   useEffect(() => {
-    const nc = getCache(platform);
+    const nc = getCache(platform, queue);
     if (nc.fetched) return;
-    fetchLeaderboardTop(platform)
+    fetchLeaderboardTop(platform, queue)
       .then(data => {
         nc.entries = data;
         nc.fetched = true;
@@ -83,12 +89,11 @@ export default function LeaderboardPage() {
         setLoading(false);
       })
       .catch(err => { setError(err.message); setLoading(false); });
-  }, [platform]);
+  }, [platform, queue]);
 
-  // Name auto-loader — resumes from cached offset, respects persisted timer
   useEffect(() => {
     if (entriesRef.current.length === 0) return;
-    const nc = getCache(platform);
+    const nc = getCache(platform, queue);
     if (nc.nameOffset >= entriesRef.current.length) return;
 
     let cancelled = false;
@@ -129,10 +134,10 @@ export default function LeaderboardPage() {
     const initialDelay = Math.max(0, nc.nextBatchTime - Date.now());
     timeoutRef.current = setTimeout(loadBatch, initialDelay);
     return () => { cancelled = true; clearTimeout(timeoutRef.current); };
-  }, [platform, entries.length > 0]);
+  }, [platform, queue, entries.length > 0]);
 
   async function loadMore() {
-    const nc = getCache(platform);
+    const nc = getCache(platform, queue);
     if (displayed < entries.length) {
       nc.displayed += PAGE_SIZE;
       setDisplayed(nc.displayed);
@@ -141,7 +146,7 @@ export default function LeaderboardPage() {
     setLoadingMore(true);
     try {
       const nextPage = masterPage + 1;
-      const newEntries = await fetchLeaderboardMaster(platform, nextPage);
+      const newEntries = await fetchLeaderboardMaster(platform, nextPage, queue);
       if (newEntries.length === 0) {
         nc.hasMore = false;
         setHasMore(false);
@@ -166,6 +171,9 @@ export default function LeaderboardPage() {
     navigate(`/?puuid=${encodeURIComponent(entry.puuid)}&platform=${platform}`);
   }
 
+  function handlePlatformChange(val) { lastPlatform = val; setPlatform(val); }
+  function handleQueueChange(val)    { lastQueue    = val; setQueue(val);    }
+
   const winRate    = e => Math.round((e.wins / (e.wins + e.losses)) * 100);
   const displayName = entry => {
     const n = names[entry.puuid];
@@ -175,17 +183,25 @@ export default function LeaderboardPage() {
   };
 
   const regionLabel = PLATFORMS.find(p => p.value === platform)?.label ?? platform.toUpperCase();
+  const queueLabel  = QUEUES.find(q => q.value === queue)?.label ?? 'Solo/Duo';
   const visible = entries.slice(0, displayed);
 
   return (
     <main>
       <div className="leaderboard-header">
-        <h1>{regionLabel} Leaderboard</h1>
-        <select value={platform} onChange={e => { lastPlatform = e.target.value; setPlatform(e.target.value); }}>
-          {PLATFORMS.map(p => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
+        <h1>{regionLabel} {queueLabel} Leaderboard</h1>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <select value={queue} onChange={e => handleQueueChange(e.target.value)}>
+            {QUEUES.map(q => (
+              <option key={q.value} value={q.value}>{q.label}</option>
+            ))}
+          </select>
+          <select value={platform} onChange={e => handlePlatformChange(e.target.value)}>
+            {PLATFORMS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && <p>Loading leaderboard…</p>}

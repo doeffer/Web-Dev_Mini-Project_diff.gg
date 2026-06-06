@@ -78,10 +78,10 @@ async function getSummonerDataByPuuid(puuid, region = 'europe', platform = 'euw1
 }
 
 // Returns all Challenger + Grandmaster entries sorted by LP
-async function getTopLeaderboard(platform = 'euw1') {
+async function getTopLeaderboard(platform = 'euw1', queue = 'RANKED_SOLO_5x5') {
   const [challenger, grandmaster] = await Promise.all([
-    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5`),
-    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/RANKED_SOLO_5x5`),
+    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/${queue}`),
+    riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/${queue}`),
   ]);
 
   return [
@@ -91,9 +91,9 @@ async function getTopLeaderboard(platform = 'euw1') {
 }
 
 // Returns one page of Master entries (~205 per page) sorted by LP
-async function getMasterLeaderboard(page = 1, platform = 'euw1') {
+async function getMasterLeaderboard(page = 1, platform = 'euw1', queue = 'RANKED_SOLO_5x5') {
   const entries = await riotGet(
-    `https://${platform}.api.riotgames.com/lol/league/v4/entries/RANKED_SOLO_5x5/MASTER/I?page=${page}`
+    `https://${platform}.api.riotgames.com/lol/league/v4/entries/${queue}/MASTER/I?page=${page}`
   );
   return entries
     .map(e => ({ ...e, tier: 'MASTER' }))
@@ -127,6 +127,36 @@ async function getChampionMastery(puuid, platform = 'euw1') {
   );
 }
 
+const apexLeagueCache = new Map();
+const APEX_CACHE_TTL = 3 * 60 * 1000;
+
+async function getApexRank(puuid, queue = 'RANKED_SOLO_5x5', platform = 'euw1') {
+  const cacheKey = `${platform}:${queue}`;
+  const now = Date.now();
+  const cached = apexLeagueCache.get(cacheKey);
+
+  let all;
+  if (cached && now - cached.fetchedAt < APEX_CACHE_TTL) {
+    all = cached.data;
+  } else {
+    const [challenger, grandmaster, master] = await Promise.all([
+      riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/${queue}`),
+      riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/grandmasterleagues/by-queue/${queue}`),
+      riotGet(`https://${platform}.api.riotgames.com/lol/league/v4/masterleagues/by-queue/${queue}`),
+    ]);
+    all = [
+      ...challenger.entries.map(e => ({ ...e, tier: 'CHALLENGER' })),
+      ...grandmaster.entries.map(e => ({ ...e, tier: 'GRANDMASTER' })),
+      ...master.entries.map(e => ({ ...e, tier: 'MASTER' })),
+    ].sort((a, b) => b.leaguePoints - a.leaguePoints);
+    apexLeagueCache.set(cacheKey, { data: all, fetchedAt: now });
+  }
+
+  const idx = all.findIndex(e => e.puuid === puuid);
+  if (idx === -1) return null;
+  return { rank: idx + 1, tier: all[idx].tier };
+}
+
 async function getLiveGame(puuid, platform = 'euw1') {
   try {
     return await riotGet(
@@ -143,4 +173,4 @@ async function getLiveGame(puuid, platform = 'euw1') {
   }
 }
 
-module.exports = { getSummonerData, getSummonerDataByPuuid, getTopLeaderboard, getMasterLeaderboard, getAccountByPuuid, getMatches, getSummonerById, getChampionMastery, getLiveGame, continentOf };
+module.exports = { getSummonerData, getSummonerDataByPuuid, getTopLeaderboard, getMasterLeaderboard, getAccountByPuuid, getMatches, getSummonerById, getChampionMastery, getLiveGame, getApexRank, continentOf };

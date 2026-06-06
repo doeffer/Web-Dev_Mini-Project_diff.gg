@@ -1,5 +1,5 @@
 const express = require('express');
-const { getSummonerData, getSummonerDataByPuuid, getMatches, getChampionMastery, getLiveGame } = require('../services/riot');
+const { getSummonerData, getSummonerDataByPuuid, getMatches, getChampionMastery, getLiveGame, getApexRank } = require('../services/riot');
 
 const router = express.Router();
 
@@ -59,6 +59,18 @@ router.get('/live', async (req, res) => {
   try {
     const game = await getLiveGame(puuid, platform);
     res.json(game); // null when not in a game
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
+// GET /api/apex-rank?summonerId=&queue=&platform=
+router.get('/apex-rank', async (req, res) => {
+  const { puuid, queue = 'RANKED_SOLO_5x5', platform = 'euw1' } = req.query;
+  if (!puuid) return res.status(400).json({ error: 'puuid required' });
+  try {
+    const result = await getApexRank(puuid, queue, platform);
+    res.json(result);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

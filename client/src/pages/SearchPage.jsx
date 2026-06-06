@@ -2,20 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchSummoner, fetchSummonerByPuuid, fetchMatches, fetchRandomPlayer } from '../api';
 import SummonerCard from '../components/SummonerCard';
-
-const PLATFORMS = [
-  { value: 'euw1', label: 'EUW',  continent: 'europe'   },
-  { value: 'eun1', label: 'EUNE', continent: 'europe'   },
-  { value: 'tr1',  label: 'TR',   continent: 'europe'   },
-  { value: 'ru',   label: 'RU',   continent: 'europe'   },
-  { value: 'na1',  label: 'NA',   continent: 'americas' },
-  { value: 'br1',  label: 'BR',   continent: 'americas' },
-  { value: 'la1',  label: 'LAN',  continent: 'americas' },
-  { value: 'la2',  label: 'LAS',  continent: 'americas' },
-  { value: 'kr',   label: 'KR',   continent: 'asia'     },
-  { value: 'jp1',  label: 'JP',   continent: 'asia'     },
-  { value: 'oc1',  label: 'OCE',  continent: 'sea'      },
-];
+import { useSearchContext } from '../context/SearchContext';
+import { PLATFORMS } from '../utils/constants';
 
 const QUICK_FILTERS = [
   { label: 'All',      queue: null },
@@ -37,7 +25,8 @@ const MORE_MODES = [
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const [input, setInput] = useState('');
-  const [platform, setPlatform] = useState('euw1');
+  const [platform, _setPlatform] = useState('euw1');
+  function setPlatform(val) { _setPlatform(val); setLastPlatform(val); }
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +37,8 @@ export default function SearchPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [slowLoad, setSlowLoad] = useState(false);
+
+  const { setHasSearched, setLastPlatform } = useSearchContext();
 
   const profileRef    = useRef(null);
   const mountedRef    = useRef(true);
@@ -63,7 +54,24 @@ export default function SearchPage() {
     return () => clearTimeout(t);
   }, [loading]);
 
+  useEffect(() => {
+    if (!data && !loading) setHasSearched(false);
+  }, [data, loading]);
+
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 7000);
+    return () => clearTimeout(t);
+  }, [error]);
+
+  function formatError(msg) {
+    if (!msg) return '';
+    if (msg.toLowerCase().includes('rate limit')) return 'Rate limit reached — please wait a moment and try again.';
+    return msg.charAt(0).toUpperCase() + msg.slice(1);
+  }
+
   function applyNewData(result, activeContinent) {
+    setHasSearched(true);
     profileRef.current = { puuid: result.account.puuid, continent: activeContinent };
     matchCacheRef.current = new Map();
     matchCacheRef.current.set(null, {
@@ -103,6 +111,13 @@ export default function SearchPage() {
     const puuid = searchParams.get('puuid');
     const paramPlatform = searchParams.get('platform') || 'euw1';
     const riotId = searchParams.get('riotId');
+
+    if (searchParams.get('reset') && !puuid && !riotId) {
+      setData(null);
+      setError(null);
+      setInput('');
+      return;
+    }
 
     if (puuid) {
       const paramContinent = PLATFORMS.find(p => p.value === paramPlatform)?.continent ?? 'europe';
@@ -199,31 +214,53 @@ export default function SearchPage() {
 
   const isMoreMode = MORE_MODES.some(m => m.queue === queueFilter);
 
+  if (!data && !loading) {
+    return (
+      <main className="search-hero-page">
+        <div className="search-hero">
+          <h1 className="hero-title">soerby.gg</h1>
+          <p className="hero-sub">League of Legends stat viewer</p>
+          <form className="hero-form" onSubmit={handleSearch}>
+            <select value={platform} onChange={e => setPlatform(e.target.value)}>
+              {PLATFORMS.map(p => (
+                <option key={p.value} value={p.value}>{p.label}</option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="GameName#TAG"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+            />
+            <button type="submit" disabled={loading}>
+              {loading ? (slowLoad ? 'Hang tight…' : 'Searching…') : 'Search'}
+            </button>
+            <button type="button" onClick={handleRandom} disabled={loading}>Random</button>
+          </form>
+          {error && <p className="error">{formatError(error)}</p>}
+          <div className="shortcut-cards">
+            <div className="shortcut-card">
+              <span className="shortcut-label">Recent Searches</span>
+              <span className="shortcut-coming">Coming soon</span>
+            </div>
+            <div className="shortcut-card">
+              <span className="shortcut-label">Favourites</span>
+              <span className="shortcut-coming">Coming soon</span>
+            </div>
+            <div className="shortcut-card">
+              <span className="shortcut-label">Pro Players</span>
+              <span className="shortcut-coming">Coming soon</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main>
-      <h1>soerby.gg</h1>
-      <form className="search-form" onSubmit={handleSearch}>
-        <select value={platform} onChange={e => setPlatform(e.target.value)}>
-          {PLATFORMS.map(p => (
-            <option key={p.value} value={p.value}>{p.label}</option>
-          ))}
-        </select>
-        <input
-          type="text"
-          placeholder="GameName#TAG"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? (slowLoad ? 'Hang tight…' : 'Searching…') : 'Search'}
-        </button>
-        <button type="button" onClick={handleRandom} disabled={loading}>
-          Random
-        </button>
-      </form>
-
       {slowLoad && !error && <p className="slow-load-msg">Taking a little longer than usual, hang tight…</p>}
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error">{formatError(error)}</p>}
 
       {data && (
         <>

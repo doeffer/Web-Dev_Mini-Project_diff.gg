@@ -6,20 +6,22 @@ const router = express.Router();
 // GET /api/leaderboard/top?platform=euw1
 router.get('/leaderboard/top', async (req, res) => {
   const platform = req.query.platform || 'euw1';
+  const queue    = req.query.queue    || 'RANKED_SOLO_5x5';
   try {
-    const entries = await getTopLeaderboard(platform);
+    const entries = await getTopLeaderboard(platform, queue);
     res.json(entries);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }
 });
 
-// GET /api/leaderboard/master?platform=euw1&page=1
+// GET /api/leaderboard/master?platform=euw1&page=1&queue=RANKED_SOLO_5x5
 router.get('/leaderboard/master', async (req, res) => {
   const platform = req.query.platform || 'euw1';
-  const page = parseInt(req.query.page) || 1;
+  const page     = parseInt(req.query.page) || 1;
+  const queue    = req.query.queue    || 'RANKED_SOLO_5x5';
   try {
-    const entries = await getMasterLeaderboard(page, platform);
+    const entries = await getMasterLeaderboard(page, platform, queue);
     res.json(entries);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });

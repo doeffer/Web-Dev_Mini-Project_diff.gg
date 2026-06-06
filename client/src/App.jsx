@@ -1,14 +1,67 @@
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { useState } from 'react';
+import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
 import TeamsPage from './pages/TeamsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import { SearchProvider, useSearchContext } from './context/SearchContext';
+import { PLATFORMS } from './utils/constants';
+import { fetchRandomPlayer } from './api';
 
 function Nav() {
+  const { hasSearched, lastPlatform, setLastPlatform } = useSearchContext();
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const [input,       setInput]       = useState('');
+  const [randomizing, setRandomizing] = useState(false);
+
+  const heroShowing = location.pathname === '/' && !hasSearched;
+
+  function handleHome(e) {
+    e.preventDefault();
+    navigate(`/?reset=${Date.now()}`);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    navigate(`/?riotId=${encodeURIComponent(trimmed)}&platform=${lastPlatform}`);
+    setInput('');
+  }
+
+  async function handleRandom() {
+    setRandomizing(true);
+    try {
+      const { puuid, platform } = await fetchRandomPlayer(lastPlatform);
+      navigate(`/?puuid=${encodeURIComponent(puuid)}&platform=${platform}`);
+    } catch {}
+    finally { setRandomizing(false); }
+  }
+
   return (
-    <nav>
-      <NavLink to="/" className="nav-brand">soerby.gg</NavLink>
+    <nav className={!heroShowing ? 'nav-expanded' : ''}>
+      <a href="/" className="nav-brand" onClick={handleHome}>soerby.gg</a>
+      {!heroShowing && (
+        <form className="nav-search-form" onSubmit={handleSubmit}>
+          <select value={lastPlatform} onChange={e => setLastPlatform(e.target.value)}>
+            {PLATFORMS.map(p => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="GameName#TAG"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+          />
+          <button type="submit">Search</button>
+          <button type="button" onClick={handleRandom} disabled={randomizing}>
+            {randomizing ? '…' : 'Random'}
+          </button>
+        </form>
+      )}
       <div className="nav-links">
-        <NavLink to="/" end>Search</NavLink>
+        <NavLink to="/" end onClick={handleHome}>Home</NavLink>
         <NavLink to="/teams">Teams</NavLink>
         <NavLink to="/leaderboard">Leaderboard</NavLink>
       </div>
@@ -19,12 +72,14 @@ function Nav() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Nav />
-      <Routes>
-        <Route path="/" element={<SearchPage />} />
-        <Route path="/teams" element={<TeamsPage />} />
-        <Route path="/leaderboard" element={<LeaderboardPage />} />
-      </Routes>
+      <SearchProvider>
+        <Nav />
+        <Routes>
+          <Route path="/" element={<SearchPage />} />
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+        </Routes>
+      </SearchProvider>
     </BrowserRouter>
   );
 }
