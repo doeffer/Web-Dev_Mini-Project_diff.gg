@@ -6,9 +6,12 @@ import LeaderboardPage from './pages/LeaderboardPage';
 function Nav() {
   return (
     <nav>
-      <NavLink to="/">Search</NavLink>
-      <NavLink to="/teams">Teams</NavLink>
-      <NavLink to="/leaderboard">Leaderboard</NavLink>
+      <NavLink to="/" className="nav-brand">soerby.gg</NavLink>
+      <div className="nav-links">
+        <NavLink to="/" end>Search</NavLink>
+        <NavLink to="/teams">Teams</NavLink>
+        <NavLink to="/leaderboard">Leaderboard</NavLink>
+      </div>
     </nav>
   );
 }

@@ -16,6 +16,43 @@ function Img({ src, alt, className }) {
   );
 }
 
+function StatBar({ label, blueVal, redVal, formatFn = v => v, blueWin }) {
+  const total = (blueVal + redVal) || 1;
+  const bluePct = (blueVal / total) * 100;
+  return (
+    <div className="stat-bar-row">
+      <span className={`stat-bar-val ${blueWin ? 'win' : 'loss'}`}>{formatFn(blueVal)}</span>
+      <div className="stat-bar-wrap">
+        <div className="stat-bar-track">
+          <div className={`stat-bar-fill ${blueWin ? 'win' : 'loss'}`} style={{ width: `${bluePct}%` }} />
+          <div className={`stat-bar-fill ${blueWin ? 'loss' : 'win'}`} style={{ width: `${100 - bluePct}%` }} />
+        </div>
+        <span className="stat-bar-label">{label}</span>
+      </div>
+      <span className={`stat-bar-val right ${blueWin ? 'loss' : 'win'}`}>{formatFn(redVal)}</span>
+    </div>
+  );
+}
+
+function teamObjItems(teamData) {
+  if (!teamData) return { structures: [], neutrals: [] };
+  const obj = teamData.objectives;
+  const s = (n) => n !== 1 ? 's' : '';
+  return {
+    structures: [
+      obj.tower.kills > 0      && `${obj.tower.kills} Tower${s(obj.tower.kills)}`,
+      obj.inhibitor?.kills > 0 && `${obj.inhibitor.kills} Inhibitor${s(obj.inhibitor.kills)}`,
+    ].filter(Boolean),
+    neutrals: [
+      obj.dragon.kills > 0      && `${obj.dragon.kills} Dragon${s(obj.dragon.kills)}`,
+      obj.baron.kills > 0       && `${obj.baron.kills} Baron${s(obj.baron.kills)}`,
+      obj.riftHerald?.kills > 0 && `${obj.riftHerald.kills} Herald${s(obj.riftHerald.kills)}`,
+      obj.horde?.kills > 0      && `${obj.horde.kills} Grub${s(obj.horde.kills)}`,
+      obj.atakhan?.kills > 0    && `Atakhan`,
+    ].filter(Boolean),
+  };
+}
+
 function ItemRow({ items, trinket, ddVersion, size = 'item-icon' }) {
   return (
     <div className="mc-items">
@@ -74,7 +111,7 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
         : p.summonerName || p.championName;
 
       return (
-        <tr key={p.puuid} className={isMe ? 'detail-row-me' : ''}>
+        <tr key={p.puuid} className={`${p.win ? 'detail-row-win' : 'detail-row-loss'}${isMe ? ' detail-row-me' : ''}`}>
           <td className="detail-champ">
             <Img src={ddVersion ? champImgUrl(p.championName, ddVersion) : null} className="detail-champ-icon" />
             <span className="detail-champ-level">{p.champLevel}</span>
@@ -112,7 +149,10 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
     });
   }
 
-  const blueWin = match.info.teams.find(t => t.teamId === 100)?.win;
+  const blueTeamData = match.info.teams.find(t => t.teamId === 100);
+  const redTeamData  = match.info.teams.find(t => t.teamId === 200);
+  const blueWin = blueTeamData?.win;
+
 
   return (
     <div className={`match-card ${me.win ? 'win' : 'loss'}`}>
@@ -144,7 +184,7 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
             {me.kills} / <span className="deaths">{me.deaths}</span> / {me.assists}
             <span className="mc-kda-ratio">{kdaRatio} KDA</span>
           </span>
-          <span className="mc-secondary">CS {cs} · {me.totalDamageDealtToChampions.toLocaleString()} dmg</span>
+          <span className="mc-secondary">CS {cs}</span>
         </div>
 
         <ItemRow items={items} trinket={me.item6} ddVersion={ddVersion} size="mc-item-icon" />
@@ -169,55 +209,65 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
       {expanded && (
         <div className="match-card-detail">
 
-          {/* Objectives */}
-          <div className="detail-objectives-section">
-            {[
-              { teamData: match.info.teams.find(t => t.teamId === 100), participants: blue, label: 'Blue', win: blueWin },
-              { teamData: match.info.teams.find(t => t.teamId === 200), participants: red,  label: 'Red',  win: !blueWin },
-            ].map(({ teamData, participants, label, win }) => {
-              if (!teamData) return null;
-              const obj = teamData.objectives;
-              const totalGold = participants.reduce((s, p) => s + p.goldEarned, 0);
-              const stats = [
-                `${obj.champion.kills} kills`,
-                `${(totalGold / 1000).toFixed(1)}k gold`,
-                `${obj.tower.kills} tower${obj.tower.kills !== 1 ? 's' : ''}`,
-                `${obj.dragon.kills} dragon${obj.dragon.kills !== 1 ? 's' : ''}`,
-                obj.baron.kills > 0      && `${obj.baron.kills} baron${obj.baron.kills !== 1 ? 's' : ''}`,
-                obj.riftHerald?.kills > 0 && `${obj.riftHerald.kills} herald${obj.riftHerald.kills !== 1 ? 's' : ''}`,
-                obj.horde?.kills > 0      && `${obj.horde.kills} grub${obj.horde.kills !== 1 ? 's' : ''}`,
-                obj.atakhan?.kills > 0    && `${obj.atakhan.kills} atakhan`,
-              ].filter(Boolean);
-              return (
-                <div key={label} className={`detail-obj-row ${win ? 'win' : 'loss'}`}>
-                  <span className="detail-obj-label">{label} — {win ? 'Victory' : 'Defeat'}</span>
-                  <span className="detail-obj-stats">{stats.join(' · ')}</span>
-                </div>
-              );
-            })}
-          </div>
-
           <table className="detail-table">
             <thead>
               <tr>
-                <th colSpan={2} className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>
-                  Blue Team
-                </th>
-                <th>Player</th>
-                <th>KDA</th>
-                <th>CS</th>
-                <th>Gold</th>
-                <th>Damage</th>
-                <th>Vision</th>
-                <th>Items</th>
+                <th colSpan={2} className={`detail-team-header detail-team-name ${blueWin ? 'win' : 'loss'}`}>Blue Team</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>Player</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>KDA</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>CS</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>Gold</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>Damage</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>Vision</th>
+                <th className={`detail-team-header ${blueWin ? 'win' : 'loss'}`}>Items</th>
               </tr>
             </thead>
             <tbody>
               {renderTeamTable(blue)}
               <tr className="detail-team-divider">
-                <td colSpan={9} className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>
-                  Red Team
+                <td colSpan={9} className="detail-comparison-cell">
+                  <div className="match-team-bar">
+                    <div className={`team-obj-panel ${blueWin ? 'win' : 'loss'}`}>
+                      <span className="team-obj-outcome">{blueWin ? 'Victory' : 'Defeat'}</span>
+                      {(() => { const { structures, neutrals } = teamObjItems(blueTeamData); return (<>
+                        <div className="team-obj-row">{structures.map((item, i) => <span key={i} className="team-obj-item">{item}</span>)}</div>
+                        <div className="team-obj-row">{neutrals.map((item, i)   => <span key={i} className="team-obj-item">{item}</span>)}</div>
+                      </>); })()}
+                    </div>
+                    <div className="team-stats-mid">
+                      <StatBar
+                        label="Kills"
+                        blueVal={blueTeamData?.objectives.champion.kills ?? 0}
+                        redVal={redTeamData?.objectives.champion.kills ?? 0}
+                        blueWin={blueWin}
+                      />
+                      <StatBar
+                        label="Gold"
+                        blueVal={blue.reduce((s, p) => s + p.goldEarned, 0)}
+                        redVal={red.reduce((s, p) => s + p.goldEarned, 0)}
+                        blueWin={blueWin}
+                        formatFn={v => `${(v / 1000).toFixed(1)}k`}
+                      />
+                    </div>
+                    <div className={`team-obj-panel right ${blueWin ? 'loss' : 'win'}`}>
+                      <span className="team-obj-outcome">{blueWin ? 'Defeat' : 'Victory'}</span>
+                      {(() => { const { structures, neutrals } = teamObjItems(redTeamData); return (<>
+                        <div className="team-obj-row">{structures.map((item, i) => <span key={i} className="team-obj-item">{item}</span>)}</div>
+                        <div className="team-obj-row">{neutrals.map((item, i)   => <span key={i} className="team-obj-item">{item}</span>)}</div>
+                      </>); })()}
+                    </div>
+                  </div>
                 </td>
+              </tr>
+              <tr>
+                <th colSpan={2} className={`detail-team-header detail-team-name ${blueWin ? 'loss' : 'win'}`}>Red Team</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Player</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>KDA</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>CS</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Gold</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Damage</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Vision</th>
+                <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Items</th>
               </tr>
               {renderTeamTable(red)}
             </tbody>

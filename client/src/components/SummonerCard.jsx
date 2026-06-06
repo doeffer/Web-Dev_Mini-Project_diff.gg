@@ -27,12 +27,14 @@ function RankCard({ entry, label }) {
 
   return (
     <div className="rank-card">
-      <img
-        className="rank-emblem"
-        src={`${CDRAGON_EMBLEMS}/emblem-${entry.tier.toLowerCase()}.png`}
-        alt={tierWord}
-        onError={e => { e.target.style.display = 'none'; }}
-      />
+      <div className="rank-emblem-wrap">
+        <img
+          className="rank-emblem"
+          src={`${CDRAGON_EMBLEMS}/emblem-${entry.tier.toLowerCase()}.png`}
+          alt={tierWord}
+          onError={e => { e.target.parentElement.style.display = 'none'; }}
+        />
+      </div>
       <div className="rank-details">
         <div className="rank-queue-label">{label}</div>
         <div className="rank-tier-name">
@@ -50,7 +52,14 @@ function RankCard({ entry, label }) {
 export default function SummonerCard({ data, platform = 'euw1', activeTab = 'overview', onTabChange }) {
   const { account, summoner, ranked, matches } = data;
   const [ddVersion, setDDVersion] = useState('15.10.1');
+  const [masteryMounted, setMasteryMounted] = useState(false);
+  const [liveMounted,    setLiveMounted]    = useState(false);
+
   useEffect(() => { getDDVersion().then(setDDVersion); }, []);
+  useEffect(() => {
+    if (activeTab === 'mastery') setMasteryMounted(true);
+    if (activeTab === 'live')    setLiveMounted(true);
+  }, [activeTab]);
 
   const soloQ = ranked.find(e => e.queueType === 'RANKED_SOLO_5x5');
   const flexQ  = ranked.find(e => e.queueType === 'RANKED_FLEX_SR');
@@ -106,12 +115,16 @@ export default function SummonerCard({ data, platform = 'euw1', activeTab = 'ove
         </>
       )}
 
-      {activeTab === 'mastery' && (
-        <ChampionMastery puuid={account.puuid} platform={platform} />
+      {masteryMounted && (
+        <div style={{ display: activeTab === 'mastery' ? 'block' : 'none' }}>
+          <ChampionMastery puuid={account.puuid} platform={platform} />
+        </div>
       )}
 
-      {activeTab === 'live' && (
-        <LiveGame puuid={account.puuid} platform={platform} />
+      {liveMounted && (
+        <div style={{ display: activeTab === 'live' ? 'block' : 'none' }}>
+          <LiveGame puuid={account.puuid} platform={platform} />
+        </div>
       )}
     </div>
   );

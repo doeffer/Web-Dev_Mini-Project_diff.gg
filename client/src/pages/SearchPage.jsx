@@ -47,6 +47,7 @@ export default function SearchPage() {
   const [hasMoreMatches, setHasMoreMatches] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [slowLoad, setSlowLoad] = useState(false);
 
   const profileRef = useRef(null);
   const mountedRef = useRef(true);
@@ -54,6 +55,12 @@ export default function SearchPage() {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
+
+  useEffect(() => {
+    if (!loading) { setSlowLoad(false); return; }
+    const t = setTimeout(() => setSlowLoad(true), 4000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   function applyNewData(result, activeContinent) {
     profileRef.current = { puuid: result.account.puuid, continent: activeContinent };
@@ -171,7 +178,7 @@ export default function SearchPage() {
   return (
     <main>
       <h1>soerby.gg</h1>
-      <form onSubmit={handleSearch}>
+      <form className="search-form" onSubmit={handleSearch}>
         <select value={platform} onChange={e => setPlatform(e.target.value)}>
           {PLATFORMS.map(p => (
             <option key={p.value} value={p.value}>{p.label}</option>
@@ -184,13 +191,14 @@ export default function SearchPage() {
           onChange={e => setInput(e.target.value)}
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Searching…' : 'Search'}
+          {loading ? (slowLoad ? 'Hang tight…' : 'Searching…') : 'Search'}
         </button>
         <button type="button" onClick={handleRandom} disabled={loading}>
           Random
         </button>
       </form>
 
+      {slowLoad && !error && <p className="slow-load-msg">Taking a little longer than usual, hang tight…</p>}
       {error && <p className="error">{error}</p>}
 
       {data && (
