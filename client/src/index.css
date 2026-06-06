@@ -185,6 +185,17 @@ nav.nav-expanded { height: 60px; }
   border-radius: var(--radius-sm);
 }
 
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--border-bright);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 80px auto;
+}
+
 .slow-load-msg {
   font-size: 13px;
   color: var(--text-dim);
@@ -275,8 +286,9 @@ main > h1 {
   border: 1px dashed var(--border-bright);
   border-radius: var(--radius);
   cursor: default;
-  opacity: 0.7;
 }
+.shortcut-card:has(.history-entry) { opacity: 1; }
+.shortcut-card:not(:has(.history-entry)) { opacity: 0.7; }
 
 .shortcut-label {
   font-size: 13px;
@@ -290,6 +302,24 @@ main > h1 {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
+.history-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 5px 6px;
+  cursor: pointer;
+  text-align: left;
+  gap: 8px;
+  transition: background 0.15s;
+}
+.history-entry:hover { background: var(--bg-elevated); }
+.history-name { font-size: 13px; color: var(--text-h); font-weight: 500; }
+.history-tag  { color: var(--text-dim); font-weight: 400; }
+.history-platform { font-size: 11px; color: var(--gold); font-weight: 600; flex-shrink: 0; }
 
 /* ─── Queue filters ───────────────────────────────────────────── */
 .queue-filters {

@@ -110,7 +110,7 @@ export default function TeamsPage() {
     }
   }
 
-  if (loading) return <main><p>Loading teams…</p></main>;
+  if (loading) return <main><div className="spinner" /></main>;
   if (error)   return <main><p className="error">{error}</p></main>;
 
   return (

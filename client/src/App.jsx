@@ -40,7 +40,7 @@ function Nav() {
 
   return (
     <nav className={!heroShowing ? 'nav-expanded' : ''}>
-      <a href="/" className="nav-brand" onClick={handleHome}>soerby.gg</a>
+      <a href="/" className="nav-brand" onClick={handleHome}>diff.gg</a>
       {!heroShowing && (
         <form className="nav-search-form" onSubmit={handleSubmit}>
           <select value={lastPlatform} onChange={e => setLastPlatform(e.target.value)}>

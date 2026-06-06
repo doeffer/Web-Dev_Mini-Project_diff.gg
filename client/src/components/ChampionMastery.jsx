@@ -19,7 +19,7 @@ export default function ChampionMastery({ puuid, platform }) {
       .finally(() => setLoading(false));
   }, [puuid, platform]);
 
-  if (loading) return <p>Loading mastery…</p>;
+  if (loading) return <div className="spinner" />;
   if (error) return <p className="error">{error}</p>;
   if (!mastery || !champMap) return null;
 

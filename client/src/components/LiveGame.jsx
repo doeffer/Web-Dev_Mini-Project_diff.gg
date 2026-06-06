@@ -35,7 +35,7 @@ export default function LiveGame({ puuid, platform }) {
     </p>
   );
   if (error) return <p className="error">{error}</p>;
-  if (game === undefined) return <p>Checking live game…</p>;
+  if (game === undefined) return <div className="spinner" />;
   if (game === null) return <p className="live-not-in-game">Not currently in a game.</p>;
 
   const queueName = QUEUE_NAMES[game.gameQueueConfigId] || game.gameMode || 'Unknown Mode';

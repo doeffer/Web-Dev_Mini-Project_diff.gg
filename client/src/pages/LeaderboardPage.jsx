@@ -204,7 +204,7 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {loading && <p>Loading leaderboard…</p>}
+      {loading && <div className="spinner" />}
       {error   && <p className="error">{error}</p>}
 
       {!loading && !error && (

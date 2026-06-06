@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchSummoner, fetchSummonerByPuuid, fetchMatches, fetchRandomPlayer } from '../api';
 import SummonerCard from '../components/SummonerCard';
 import { useSearchContext } from '../context/SearchContext';
 import { PLATFORMS } from '../utils/constants';
+import { getHistory, addToHistory } from '../utils/searchHistory';
 
 const QUICK_FILTERS = [
   { label: 'All',      queue: null },
@@ -39,6 +40,7 @@ export default function SearchPage() {
   const [slowLoad, setSlowLoad] = useState(false);
 
   const { setHasSearched, setLastPlatform } = useSearchContext();
+  const navigate = useNavigate();
 
   const profileRef    = useRef(null);
   const mountedRef    = useRef(true);
@@ -70,8 +72,14 @@ export default function SearchPage() {
     return msg.charAt(0).toUpperCase() + msg.slice(1);
   }
 
-  function applyNewData(result, activeContinent) {
+  function applyNewData(result, activeContinent, activePlatform) {
     setHasSearched(true);
+    addToHistory({
+      gameName: result.account.gameName,
+      tagLine:  result.account.tagLine,
+      platform: activePlatform,
+      puuid:    result.account.puuid,
+    });
     profileRef.current = { puuid: result.account.puuid, continent: activeContinent };
     matchCacheRef.current = new Map();
     matchCacheRef.current.set(null, {
@@ -99,7 +107,7 @@ export default function SearchPage() {
     setLoading(true);
     try {
       const result = await fetchSummoner(gameName, tagLine, activeContinent, activePlatform);
-      if (mountedRef.current) applyNewData(result, activeContinent);
+      if (mountedRef.current) applyNewData(result, activeContinent, activePlatform);
     } catch (err) {
       if (mountedRef.current) setError(err.message);
     } finally {
@@ -129,7 +137,7 @@ export default function SearchPage() {
         .then(result => {
           if (mountedRef.current) {
             setInput(`${result.account.gameName}#${result.account.tagLine}`);
-            applyNewData(result, paramContinent);
+            applyNewData(result, paramContinent, paramPlatform);
           }
         })
         .catch(err => { if (mountedRef.current) setError(err.message); })
@@ -155,7 +163,7 @@ export default function SearchPage() {
       const result = await fetchSummonerByPuuid(puuid, rContinent, rPlatform);
       if (mountedRef.current) {
         setInput(`${result.account.gameName}#${result.account.tagLine}`);
-        applyNewData(result, rContinent);
+        applyNewData(result, rContinent, rPlatform);
       }
     } catch (err) {
       if (mountedRef.current) setError(err.message);
@@ -218,7 +226,7 @@ export default function SearchPage() {
     return (
       <main className="search-hero-page">
         <div className="search-hero">
-          <h1 className="hero-title">soerby.gg</h1>
+          <h1 className="hero-title">diff.gg</h1>
           <p className="hero-sub">League of Legends stat viewer</p>
           <form className="hero-form" onSubmit={handleSearch}>
             <select value={platform} onChange={e => setPlatform(e.target.value)}>
@@ -241,7 +249,19 @@ export default function SearchPage() {
           <div className="shortcut-cards">
             <div className="shortcut-card">
               <span className="shortcut-label">Recent Searches</span>
-              <span className="shortcut-coming">Coming soon</span>
+              {getHistory().length === 0
+                ? <span className="shortcut-coming">No recent searches</span>
+                : getHistory().map(entry => (
+                    <button
+                      key={entry.puuid}
+                      className="history-entry"
+                      onClick={() => navigate(`/?puuid=${encodeURIComponent(entry.puuid)}&platform=${entry.platform}`)}
+                    >
+                      <span className="history-name">{entry.gameName}<span className="history-tag">#{entry.tagLine}</span></span>
+                      <span className="history-platform">{PLATFORMS.find(p => p.value === entry.platform)?.label ?? entry.platform}</span>
+                    </button>
+                  ))
+              }
             </div>
             <div className="shortcut-card">
               <span className="shortcut-label">Favourites</span>
@@ -259,6 +279,7 @@ export default function SearchPage() {
 
   return (
     <main>
+      {loading && !data && <div className="spinner" />}
       {slowLoad && !error && <p className="slow-load-msg">Taking a little longer than usual, hang tight…</p>}
       {error && <p className="error">{formatError(error)}</p>}
 
