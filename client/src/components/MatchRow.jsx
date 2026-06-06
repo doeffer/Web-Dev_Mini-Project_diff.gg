@@ -151,17 +151,19 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
 
   const blueTeamData = match.info.teams.find(t => t.teamId === 100);
   const redTeamData  = match.info.teams.find(t => t.teamId === 200);
-  const blueWin = blueTeamData?.win;
-
+  const blueWin  = blueTeamData?.win;
+  const isRemake = me.gameEndedInEarlySurrender && match.info.gameDuration < 180;
 
   return (
-    <div className={`match-card ${me.win ? 'win' : 'loss'}`}>
+    <div className={`match-card ${isRemake ? 'remake' : me.win ? 'win' : 'loss'}`}>
 
       {/* ── Compact summary row ── */}
       <div className="match-card-summary" onClick={() => setExpanded(e => !e)}>
 
         <div className="mc-result">
-          <span className={`mc-badge ${me.win ? 'win' : 'loss'}`}>{me.win ? 'WIN' : 'LOSS'}</span>
+          <span className={`mc-badge ${isRemake ? 'remake' : me.win ? 'win' : 'loss'}`}>
+            {isRemake ? 'Remake' : me.win ? 'WIN' : 'LOSS'}
+          </span>
           <span className="mc-queue">{queueName}</span>
           <span className="mc-meta">{playedAt} · {duration}</span>
         </div>
@@ -224,7 +226,7 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
             </thead>
             <tbody>
               {renderTeamTable(blue)}
-              <tr className="detail-team-divider">
+              {!isRemake && <tr className="detail-team-divider">
                 <td colSpan={9} className="detail-comparison-cell">
                   <div className="match-team-bar">
                     <div className={`team-obj-panel ${blueWin ? 'win' : 'loss'}`}>
@@ -258,7 +260,7 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
                     </div>
                   </div>
                 </td>
-              </tr>
+              </tr>}
               <tr>
                 <th colSpan={2} className={`detail-team-header detail-team-name ${blueWin ? 'loss' : 'win'}`}>Red Team</th>
                 <th className={`detail-team-header ${blueWin ? 'loss' : 'win'}`}>Player</th>

@@ -49,8 +49,9 @@ export default function SearchPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [slowLoad, setSlowLoad] = useState(false);
 
-  const profileRef = useRef(null);
-  const mountedRef = useRef(true);
+  const profileRef    = useRef(null);
+  const mountedRef    = useRef(true);
+  const matchCacheRef = useRef(new Map());
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -64,6 +65,12 @@ export default function SearchPage() {
 
   function applyNewData(result, activeContinent) {
     profileRef.current = { puuid: result.account.puuid, continent: activeContinent };
+    matchCacheRef.current = new Map();
+    matchCacheRef.current.set(null, {
+      matches: result.matches,
+      offset: result.matches.length,
+      hasMore: result.matches.length >= 20,
+    });
     setQueueFilter(null);
     setMatchOffset(result.matches.length);
     setHasMoreMatches(result.matches.length >= 20);
@@ -146,10 +153,20 @@ export default function SearchPage() {
     setQueueFilter(queue);
     const ctx = profileRef.current;
     if (!ctx) return;
+
+    if (matchCacheRef.current.has(queue)) {
+      const cached = matchCacheRef.current.get(queue);
+      setData(prev => prev ? { ...prev, matches: cached.matches } : null);
+      setMatchOffset(cached.offset);
+      setHasMoreMatches(cached.hasMore);
+      return;
+    }
+
     setMatchesLoading(true);
     try {
       const matches = await fetchMatches(ctx.puuid, ctx.continent, queue, 0);
       if (mountedRef.current) {
+        matchCacheRef.current.set(queue, { matches, offset: matches.length, hasMore: matches.length >= 20 });
         setData(prev => prev ? { ...prev, matches } : null);
         setMatchOffset(matches.length);
         setHasMoreMatches(matches.length >= 20);
@@ -165,9 +182,16 @@ export default function SearchPage() {
     try {
       const newMatches = await fetchMatches(ctx.puuid, ctx.continent, queueFilter, matchOffset);
       if (mountedRef.current) {
-        setData(prev => prev ? { ...prev, matches: [...prev.matches, ...newMatches] } : null);
-        setMatchOffset(prev => prev + newMatches.length);
-        setHasMoreMatches(newMatches.length >= 20);
+        const newOffset  = matchOffset + newMatches.length;
+        const newHasMore = newMatches.length >= 20;
+        setData(prev => {
+          if (!prev) return null;
+          const merged = [...prev.matches, ...newMatches];
+          matchCacheRef.current.set(queueFilter, { matches: merged, offset: newOffset, hasMore: newHasMore });
+          return { ...prev, matches: merged };
+        });
+        setMatchOffset(newOffset);
+        setHasMoreMatches(newHasMore);
       }
     } catch {}
     finally { if (mountedRef.current) setLoadingMore(false); }
@@ -203,42 +227,42 @@ export default function SearchPage() {
 
       {data && (
         <>
-          {activeTab === 'overview' && (
-            <>
-              <div className="queue-filters">
-                {QUICK_FILTERS.map(({ label, queue }) => (
-                  <button
-                    key={label}
-                    className={queueFilter === queue ? 'active' : ''}
-                    onClick={() => applyFilter(queue)}
-                    disabled={matchesLoading}
-                  >
-                    {label}
-                  </button>
-                ))}
-                <select
-                  value={isMoreMode ? queueFilter : ''}
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (val !== '') applyFilter(Number(val));
-                  }}
-                  disabled={matchesLoading}
-                  className={isMoreMode ? 'active' : ''}
-                >
-                  <option value="">More modes…</option>
-                  {MORE_MODES.map(({ label, queue }) => (
-                    <option key={queue} value={queue}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              {matchesLoading && <p>Loading matches…</p>}
-            </>
-          )}
           <SummonerCard
             data={data}
             platform={platform}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            filterSlot={activeTab === 'overview' ? (
+              <>
+                <div className="queue-filters">
+                  {QUICK_FILTERS.map(({ label, queue }) => (
+                    <button
+                      key={label}
+                      className={queueFilter === queue ? 'active' : ''}
+                      onClick={() => applyFilter(queue)}
+                      disabled={matchesLoading}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <select
+                    value={isMoreMode ? queueFilter : ''}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val !== '') applyFilter(Number(val));
+                    }}
+                    disabled={matchesLoading}
+                    className={isMoreMode ? 'active' : ''}
+                  >
+                    <option value="">More modes…</option>
+                    {MORE_MODES.map(({ label, queue }) => (
+                      <option key={queue} value={queue}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                {matchesLoading && <p>Loading matches…</p>}
+              </>
+            ) : null}
           />
           {activeTab === 'overview' && hasMoreMatches && (
             <button onClick={loadMoreMatches} disabled={loadingMore || matchesLoading}>

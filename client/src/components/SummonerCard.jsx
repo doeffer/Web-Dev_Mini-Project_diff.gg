@@ -49,7 +49,7 @@ function RankCard({ entry, label }) {
   );
 }
 
-export default function SummonerCard({ data, platform = 'euw1', activeTab = 'overview', onTabChange }) {
+export default function SummonerCard({ data, platform = 'euw1', activeTab = 'overview', onTabChange, filterSlot }) {
   const { account, summoner, ranked, matches } = data;
   const [ddVersion, setDDVersion] = useState('15.10.1');
   const [masteryMounted, setMasteryMounted] = useState(false);
@@ -101,6 +101,8 @@ export default function SummonerCard({ data, platform = 'euw1', activeTab = 'ove
           </button>
         ))}
       </div>
+
+      {filterSlot}
 
       {activeTab === 'overview' && (
         <>
