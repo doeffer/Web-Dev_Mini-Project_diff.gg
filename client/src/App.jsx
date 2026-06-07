@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { initTooltips } from './utils/tooltipManager';
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
-import TeamsPage from './pages/TeamsPage';
+import MultiSearchPage from './pages/MultiSearchPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import { SearchProvider, useSearchContext } from './context/SearchContext';
 import { PLATFORMS } from './utils/constants';
@@ -63,7 +63,7 @@ function Nav() {
       )}
       <div className="nav-links">
         <NavLink to="/" end onClick={handleHome}>Home</NavLink>
-        <NavLink to="/teams">Teams</NavLink>
+        <NavLink to="/teams">Multi-Search</NavLink>
         <NavLink to="/leaderboard">Leaderboard</NavLink>
       </div>
     </nav>
@@ -79,7 +79,7 @@ export default function App() {
         <Nav />
         <Routes>
           <Route path="/" element={<SearchPage />} />
-          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/teams" element={<MultiSearchPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
         </Routes>
       </SearchProvider>

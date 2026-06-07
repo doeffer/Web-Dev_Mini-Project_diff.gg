@@ -40,6 +40,13 @@ export async function fetchNames(puuids, region = 'europe') {
   return data;
 }
 
+export async function fetchRandomFive(platform = 'euw1') {
+  const res = await fetch(`/api/random-five?platform=${platform}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to find random players.');
+  return data.players; // string[]
+}
+
 export async function fetchRandomPlayer(platform = 'euw1') {
   const res = await fetch(`/api/random?platform=${platform}`);
   const data = await res.json();
@@ -102,11 +109,11 @@ export async function fetchApexRank(puuid, queue, platform) {
   return data; // { rank, tier } or null
 }
 
-export async function fetchMatches(puuid, region = 'europe', queueId = null, start = 0) {
+export async function fetchMatches(puuid, region = 'europe', queueId = null, start = 0, count = 20) {
   const res = await fetch('/api/matches', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ puuid, region, queueId, start }),
+    body: JSON.stringify({ puuid, region, queueId, start, count }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to fetch matches.');

@@ -650,7 +650,7 @@ main > h1 {
 }
 .mc-mini-row { display: flex; gap: 2px; }
 .mc-mini-icon {
-  width: 20px; height: 20px;
+  width: 24px; height: 24px;
   border-radius: 3px;
   border: 1px solid var(--border);
   display: block;
@@ -800,9 +800,9 @@ main > h1 {
 /* Detail cells */
 .detail-champ {
   position: relative;
-  width: 36px;
+  width: 42px;
 }
-.detail-champ-icon  { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-bright); display: block; }
+.detail-champ-icon  { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-bright); display: block; }
 .detail-champ-level {
   position: absolute;
   bottom: -2px; right: -6px;
@@ -820,10 +820,10 @@ main > h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  width: 36px;
+  width: 40px;
 }
-.detail-spell-icon { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
-.detail-rune-icon  { width: 16px; height: 16px; border-radius: 50%; display: block; }
+.detail-spell-icon { width: 18px; height: 18px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
+.detail-rune-icon  { width: 18px; height: 18px; border-radius: 50%; display: block; }
 
 .detail-augment-grid {
   display: grid;
@@ -852,8 +852,8 @@ main > h1 {
 .detail-dmg-bar { height: 3px; background: var(--bg-elevated); border-radius: 2px; width: 80px; }
 .detail-dmg-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gold) 0%, #e8c060 100%); }
 
-.detail-items { display: flex; align-items: center; gap: 2px; }
-.detail-item-icon { width: 22px; height: 22px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
+.detail-items { }
+.detail-item-icon { width: 26px; height: 26px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
 .detail-item-icon.trinket { opacity: 0.75; }
 
 /* ─── Champion mastery ────────────────────────────────────────── */
@@ -1177,3 +1177,393 @@ legend {
 .roster-coach .roster-role { color: var(--gold); }
 
 .roster-name { color: var(--text-h); font-size: 13px; }
+
+/* ─── Multi-Search page ───────────────────────────────────────── */
+.ms-top-layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.ms-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex-shrink: 0;
+  min-width: 440px;
+}
+
+.ms-form-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ms-form-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ms-form-region {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ms-form-region label { font-size: 13px; color: var(--text); }
+
+.ms-form-roster { max-width: 500px; }
+
+/* Results section */
+.ms-results-section {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Results row */
+.ms-results {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+/* Individual card */
+.ms-card {
+  flex: 1 1 0;
+  min-width: 185px;
+  max-width: 240px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ms-card-empty {
+  opacity: 0.4;
+}
+
+.ms-card-role {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  background: var(--bg-elevated);
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ms-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 10px;
+}
+
+.ms-profile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-bright);
+  flex-shrink: 0;
+}
+
+.ms-card-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ms-card-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ms-card-tag {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.ms-card-level {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* Rank section */
+.ms-card-rank {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  min-height: 56px;
+}
+
+.ms-rank-emblem-wrap {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.ms-rank-emblem {
+  width: 120px;
+  height: 120px;
+  margin: -40px -40px;
+  object-fit: contain;
+  display: block;
+}
+
+.ms-rank-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ms-rank-tier {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.ms-rank-lp {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.ms-rank-record {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.ms-unranked {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Champion list */
+.ms-champ-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 4px;
+  flex: 1;
+}
+
+.ms-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding: 0 12px 6px;
+}
+
+.ms-no-data {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 4px 12px;
+}
+
+.ms-champ-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  transition: background 0.1s;
+}
+.ms-champ-row:hover { background: var(--bg-elevated); }
+
+.ms-champ-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--border-bright);
+  flex-shrink: 0;
+  display: block;
+}
+
+.ms-champ-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ms-champ-name {
+  font-size: 12px;
+  color: var(--text-h);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ms-champ-stats {
+  font-size: 11px;
+  color: var(--text);
+}
+
+.ms-wr-good { color: var(--win);  font-weight: 600; }
+.ms-wr-bad  { color: var(--loss); font-weight: 600; }
+
+.ms-card-err-msg {
+  margin: 12px;
+  font-size: 12px;
+}
+
+.ms-empty-label {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding: 20px 12px;
+  display: block;
+  text-align: center;
+}
+
+/* Save row */
+.ms-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ms-save-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ms-save-form input {
+  width: 240px;
+}
+
+/* Favourites */
+.ms-favourites {
+  flex: 1;
+  min-width: 0;
+  max-height: 340px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ms-favourites h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ms-fav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold) transparent;
+}
+.ms-fav-list::-webkit-scrollbar { width: 4px; }
+.ms-fav-list::-webkit-scrollbar-track { background: transparent; }
+.ms-fav-list::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+.ms-fav-list::-webkit-scrollbar-button { display: none; }
+
+.ms-fav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.ms-fav-load {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+  min-width: 0;
+  color: inherit;
+}
+.ms-fav-load:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  border-color: transparent;
+  color: inherit;
+}
+
+.ms-fav-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-h);
+  flex-shrink: 0;
+}
+
+.ms-fav-region {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.ms-fav-players {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ms-fav-delete {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 16px;
+  border-radius: 0;
+  margin-right: 4px;
+}
+.ms-fav-delete:hover:not(:disabled) {
+  color: var(--loss);
+  background: var(--loss-dim);
+  border-color: transparent;
+}

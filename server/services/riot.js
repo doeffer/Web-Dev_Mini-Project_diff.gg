@@ -11,7 +11,7 @@ function continentOf(platform) {
   return PLATFORM_CONTINENT[platform] ?? 'europe';
 }
 
-async function riotGet(url, retries = 1) {
+async function riotGet(url, retries = 3) {
   console.log(`[riot] GET ${url}`);
   const res = await fetch(url, { headers: { 'X-Riot-Token': API_KEY } });
   const text = await res.text();

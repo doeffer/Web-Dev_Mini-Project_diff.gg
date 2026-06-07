@@ -49,6 +49,36 @@ router.post('/names', async (req, res) => {
   res.json(result);
 });
 
+// GET /api/random-five?platform=euw1
+// Returns 5 random Challenger/Grandmaster players as Name#TAG strings
+router.get('/random-five', async (req, res) => {
+  const platform = req.query.platform || 'euw1';
+  const region   = continentOf(platform);
+  try {
+    const entries  = await getTopLeaderboard(platform);
+    const eligible = entries.filter(e => (e.wins + e.losses) >= 50);
+    if (eligible.length < 5) return res.status(404).json({ error: 'Not enough eligible players.' });
+
+    // Pick 5 unique random entries
+    const shuffled = eligible.sort(() => Math.random() - 0.5).slice(0, 5);
+
+    // Resolve puuids then Riot IDs
+    const players = await Promise.all(shuffled.map(async entry => {
+      let puuid = entry.puuid;
+      if (!puuid) {
+        const summoner = await getSummonerById(entry.summonerId, platform);
+        puuid = summoner.puuid;
+      }
+      const account = await getAccountByPuuid(puuid, region);
+      return `${account.gameName}#${account.tagLine}`;
+    }));
+
+    res.json({ players });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+});
+
 // GET /api/random?platform=euw1
 // Returns a random Challenger/Grandmaster player with 50+ games
 router.get('/random', async (req, res) => {
