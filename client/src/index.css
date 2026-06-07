@@ -516,9 +516,10 @@ main > h1 {
   background: var(--bg-card);
   border-left: 3px solid var(--border-bright);
 }
-.match-card.win    { border-left-color: var(--win); }
-.match-card.loss   { border-left-color: var(--loss); }
-.match-card.remake { border-left-color: var(--text-dim); }
+.match-card.win     { border-left-color: var(--win); }
+.match-card.loss    { border-left-color: var(--loss); }
+.match-card.remake  { border-left-color: var(--text-dim); }
+.match-card.neutral { border-left-color: var(--border-bright); }
 .match-card.remake .detail-row-win td,
 .match-card.remake .detail-row-loss td  { background: transparent !important; }
 .match-card.remake .detail-team-header.win,
@@ -553,9 +554,10 @@ main > h1 {
   border-radius: 3px;
   width: fit-content;
 }
-.mc-badge.win    { background: var(--win-dim);  color: var(--win);  }
-.mc-badge.loss   { background: var(--loss-dim); color: var(--loss); }
-.mc-badge.remake { background: rgba(255,255,255,0.06); color: var(--text); }
+.mc-badge.win     { background: var(--win-dim);  color: var(--win);  }
+.mc-badge.loss    { background: var(--loss-dim); color: var(--loss); }
+.mc-badge.remake  { background: rgba(255,255,255,0.06); color: var(--text); }
+.mc-badge.neutral { background: rgba(255,255,255,0.06); color: var(--text); }
 .mc-queue { font-size: 12px; color: var(--text-h); font-weight: 500; }
 .mc-meta  { font-size: 11px; color: var(--text-dim); }
 
@@ -744,8 +746,9 @@ main > h1 {
   border-bottom: 1px solid var(--border);
 }
 
-.detail-team-header.win  { background: rgba(76, 175, 125, 0.15) !important; }
-.detail-team-header.loss { background: rgba(232, 93, 93, 0.15) !important; }
+.detail-team-header.win     { background: rgba(76, 175, 125, 0.15) !important; }
+.detail-team-header.loss    { background: rgba(232, 93, 93, 0.15) !important; }
+.detail-team-header.neutral { background: var(--bg-elevated) !important; }
 
 .detail-team-name {
   padding: 7px 10px !important;
@@ -754,8 +757,9 @@ main > h1 {
   text-transform: none !important;
   letter-spacing: 0 !important;
 }
-.detail-team-name.win  { color: var(--win)  !important; }
-.detail-team-name.loss { color: var(--loss) !important; }
+.detail-team-name.win     { color: var(--win)  !important; }
+.detail-team-name.loss    { color: var(--loss) !important; }
+.detail-team-name.neutral { color: var(--text) !important; }
 
 .detail-table td {
   padding: 7px 10px;
@@ -773,6 +777,7 @@ main > h1 {
 .detail-row-me:hover td { background: var(--primary-glow) !important; }
 
 .detail-team-divider td { padding: 6px 10px; }
+.arena-team-gap td { height: 6px; padding: 0; border: none; background: var(--bg) !important; }
 
 /* Detail cells */
 .detail-champ {
@@ -801,6 +806,14 @@ main > h1 {
 }
 .detail-spell-icon { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
 .detail-rune-icon  { width: 16px; height: 16px; border-radius: 50%; display: block; }
+
+.detail-augment-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  width: 42px;
+}
+.detail-augment-icon { width: 20px; height: 20px; border-radius: 3px; border: 1px solid var(--border-bright); display: block; }
 
 .detail-name-link {
   color: var(--text-h);

@@ -8,6 +8,7 @@ export const QUEUE_NAMES = {
   1900: 'URF',
   900:  'URF',
   1700: 'Arena',
+  1750: 'Arena 3v3',
   1020: 'One for All',
   1300: 'Nexus Blitz',
   76:   'URF',
@@ -102,6 +103,24 @@ export function getChampionIdMap() {
     );
   }
   return _champIdMapPromise;
+}
+
+let _augmentMapPromise = null;
+export function getAugmentMap() {
+  if (!_augmentMapPromise) {
+    _augmentMapPromise = fetch('https://raw.communitydragon.org/latest/cdragon/arena/en_us.json')
+      .then(r => r.json())
+      .then(data => {
+        const list = data.augments || data;
+        const map = {};
+        for (const aug of list) {
+          if (aug.iconSmall)
+            map[aug.id] = 'https://raw.communitydragon.org/latest/game/' + aug.iconSmall.toLowerCase();
+        }
+        return map;
+      });
+  }
+  return _augmentMapPromise;
 }
 
 export function timeAgo(ms) {

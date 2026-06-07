@@ -5,6 +5,7 @@ import {
   champImgUrl, spellImgUrl, itemImgUrl, runeImgUrl,
   QUEUE_NAMES, timeAgo, formatDuration,
 } from '../utils/gameData';
+import ArenaMatchRow from './ArenaMatchRow';
 
 function Img({ src, alt, className }) {
   if (!src) return <div className={`${className} img-missing`} />;
@@ -65,7 +66,7 @@ function ItemRow({ items, trinket, ddVersion, size = 'item-icon' }) {
   );
 }
 
-export default function MatchRow({ match, puuid, platform = 'euw1' }) {
+function SRMatchRow({ match, puuid, platform }) {
   const [expanded, setExpanded] = useState(false);
   const [ddVersion, setDDVersion] = useState(null);
   const [runeMap, setRuneMap]     = useState(null);
@@ -279,4 +280,11 @@ export default function MatchRow({ match, puuid, platform = 'euw1' }) {
 
     </div>
   );
+}
+
+export default function MatchRow({ match, puuid, platform = 'euw1' }) {
+  if (match.info.gameMode === 'CHERRY') {
+    return <ArenaMatchRow match={match} puuid={puuid} platform={platform} />;
+  }
+  return <SRMatchRow match={match} puuid={puuid} platform={platform} />;
 }

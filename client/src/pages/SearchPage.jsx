@@ -19,6 +19,7 @@ const MORE_MODES = [
   { label: 'Quickplay',    queue: 490  },
   { label: 'URF',          queue: 1900 },
   { label: 'Arena',        queue: 1700 },
+  { label: 'Arena 3v3',   queue: 1750 },
   { label: 'One for All',  queue: 1020 },
   { label: 'Nexus Blitz',  queue: 1300 },
 ];
@@ -227,7 +228,7 @@ export default function SearchPage() {
       <main className="search-hero-page">
         <div className="search-hero">
           <h1 className="hero-title">diff.gg</h1>
-          <p className="hero-sub">League of Legends stat viewer</p>
+          <p className="hero-sub">Yet another League of Legends stat site</p>
           <form className="hero-form" onSubmit={handleSearch}>
             <select value={platform} onChange={e => setPlatform(e.target.value)}>
               {PLATFORMS.map(p => (
