@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { getDDVersion, champImgUrl } from '../utils/gameData';
+import { getDDVersion, champImgUrl, getChampionNameMap } from '../utils/gameData';
 
 export default function MatchOverview({ matches, puuid }) {
   const [ddVersion, setDDVersion] = useState(null);
-  useEffect(() => { getDDVersion().then(setDDVersion); }, []);
+  const [champNames, setChampNames] = useState(null);
+  useEffect(() => {
+    getDDVersion().then(setDDVersion);
+    getChampionNameMap().then(setChampNames);
+  }, []);
 
   if (!matches || matches.length === 0) return null;
 
@@ -73,7 +77,7 @@ export default function MatchOverview({ matches, puuid }) {
               />
             )}
             <div className="ov-champ-info">
-              <span className="ov-champ-name">{c.name}</span>
+              <span className="ov-champ-name">{champNames?.[c.name] ?? c.name}</span>
               <span className="ov-champ-games">{c.games} game{c.games > 1 ? 's' : ''}</span>
               <span className={`ov-champ-wr ${c.wr >= 50 ? 'good' : 'bad'}`}>{c.wr}% WR</span>
             </div>

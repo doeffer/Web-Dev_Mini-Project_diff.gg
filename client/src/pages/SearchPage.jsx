@@ -6,6 +6,11 @@ import { useSearchContext } from '../context/SearchContext';
 import { PLATFORMS } from '../utils/constants';
 import { getHistory, addToHistory } from '../utils/searchHistory';
 
+function loadMsFavs() {
+  try { return JSON.parse(localStorage.getItem('diff-gg-ms-favs') || '[]'); }
+  catch { return []; }
+}
+
 const QUICK_FILTERS = [
   { label: 'All',      queue: null },
   { label: 'Solo/Duo', queue: 420  },
@@ -195,8 +200,9 @@ export default function SearchPage() {
         setMatchOffset(matches.length);
         setHasMoreMatches(matches.length >= 20);
       }
-    } catch {}
-    finally { if (mountedRef.current) setMatchesLoading(false); }
+    } catch (err) {
+      if (mountedRef.current) setError(err.message);
+    } finally { if (mountedRef.current) setMatchesLoading(false); }
   }
 
   async function loadMoreMatches() {
@@ -217,8 +223,9 @@ export default function SearchPage() {
         setMatchOffset(newOffset);
         setHasMoreMatches(newHasMore);
       }
-    } catch {}
-    finally { if (mountedRef.current) setLoadingMore(false); }
+    } catch (err) {
+      if (mountedRef.current) setError(err.message);
+    } finally { if (mountedRef.current) setLoadingMore(false); }
   }
 
   const isMoreMode = MORE_MODES.some(m => m.queue === queueFilter);
@@ -246,6 +253,7 @@ export default function SearchPage() {
             </button>
             <button type="button" onClick={handleRandom} disabled={loading}>Random</button>
           </form>
+          {slowLoad && !error && <p className="slow-load-msg">Taking a little longer than usual, hang tight…</p>}
           {error && <p className="error">{formatError(error)}</p>}
           <div className="shortcut-cards">
             <div className="shortcut-card">
@@ -265,12 +273,20 @@ export default function SearchPage() {
               }
             </div>
             <div className="shortcut-card">
-              <span className="shortcut-label">Favourites</span>
-              <span className="shortcut-coming">Coming soon</span>
-            </div>
-            <div className="shortcut-card">
-              <span className="shortcut-label">Pro Players</span>
-              <span className="shortcut-coming">Coming soon</span>
+              <span className="shortcut-label">Multi-Search Favourites</span>
+              {(loadMsFavs()).length === 0
+                ? <span className="shortcut-coming">No saved searches</span>
+                : loadMsFavs().map(fav => (
+                    <button
+                      key={fav.id}
+                      className="history-entry"
+                      onClick={() => navigate(`/teams?fav=${fav.id}`)}
+                    >
+                      <span className="history-name">{fav.name}</span>
+                      <span className="history-platform">{fav.platform.toUpperCase()}</span>
+                    </button>
+                  ))
+              }
             </div>
           </div>
         </div>

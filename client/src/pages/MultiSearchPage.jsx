@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchSummoner, fetchMatches, fetchRandomFive } from '../api';
 import MultiSearchCard from '../components/MultiSearchCard';
 import { PLATFORMS } from '../utils/constants';
@@ -11,9 +12,25 @@ const ROLES = [
   { key: 'support', label: 'Support' },
 ];
 
-
 function continentOf(platform) {
   return PLATFORMS.find(p => p.value === platform)?.continent ?? 'europe';
+}
+
+function formatError(msg) {
+  if (!msg) return '';
+  if (msg.toLowerCase().includes('rate limit')) return 'Rate limit reached — please wait a moment and try again.';
+  return msg.charAt(0).toUpperCase() + msg.slice(1);
+}
+
+function parseSlot(slot) {
+  const trimmed = slot.trim();
+  if (!trimmed) return null;
+  const idx = trimmed.indexOf('#');
+  if (idx === -1) return { error: `"${trimmed}" — use Name#TAG format` };
+  const gameName = trimmed.slice(0, idx).trim();
+  const tagLine  = trimmed.slice(idx + 1).trim();
+  if (!gameName || !tagLine) return { error: `"${trimmed}" — use Name#TAG format` };
+  return { gameName, tagLine };
 }
 
 function computeChampStats(matches, puuid) {
@@ -32,26 +49,6 @@ function computeChampStats(matches, puuid) {
   return Object.values(map).sort((a, b) => b.games - a.games).slice(0, 7);
 }
 
-async function fetchPlayerData(slot, platform) {
-  const trimmed = slot.trim();
-  if (!trimmed) return { data: null, error: null };
-  const idx = trimmed.indexOf('#');
-  if (idx === -1) return { data: null, error: `"${trimmed}" — use Name#TAG format` };
-  const gameName = trimmed.slice(0, idx).trim();
-  const tagLine  = trimmed.slice(idx + 1).trim();
-  if (!gameName || !tagLine) return { data: null, error: `"${trimmed}" — use Name#TAG format` };
-
-  const region = continentOf(platform);
-  try {
-    const profile = await fetchSummoner(gameName, tagLine, region, platform, false);
-    const rankedMatches = await fetchMatches(profile.account.puuid, region, 420, 0, 10);
-    const champStats = computeChampStats(rankedMatches, profile.account.puuid);
-    return { data: { ...profile, champStats }, error: null };
-  } catch (err) {
-    return { data: null, error: err.message };
-  }
-}
-
 const FAV_KEY = 'diff-gg-ms-favs';
 function loadFavs() {
   try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); }
@@ -59,15 +56,27 @@ function loadFavs() {
 }
 
 export default function MultiSearchPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [platform,    setPlatform]    = useState('euw1');
   const [players,     setPlayers]     = useState(['', '', '', '', '']);
   const [results,     setResults]     = useState(null);
   const [loading,     setLoading]     = useState(false);
   const [randomizing, setRandomizing] = useState(false);
   const [formErr,     setFormErr]     = useState(null);
-  const [favourites, setFavourites] = useState(loadFavs);
-  const [saveName,   setSaveName]   = useState('');
-  const [showSave,   setShowSave]   = useState(false);
+  const [favourites,  setFavourites]  = useState(loadFavs);
+  const [saveName,    setSaveName]    = useState('');
+  const [showSave,    setShowSave]    = useState(false);
+
+  useEffect(() => {
+    const favId = searchParams.get('fav');
+    if (!favId) return;
+    const fav = loadFavs().find(f => String(f.id) === favId);
+    if (!fav) return;
+    setPlatform(fav.platform);
+    setPlayers(fav.players);
+    setSearchParams({}, { replace: true });
+    runSearch(fav.players, fav.platform);
+  }, []);
 
   function setPlayer(i, val) {
     setPlayers(ps => ps.map((p, idx) => idx === i ? val : p));
@@ -76,14 +85,64 @@ export default function MultiSearchPage() {
   async function runSearch(slots, plat) {
     setLoading(true);
     setShowSave(false);
-    // Initialise all cards as pending so spinners show immediately
-    setResults(slots.map(() => ({ data: null, error: null, pending: true })));
+    const region = continentOf(plat);
 
+    setResults(slots.map(() => ({ data: null, error: null, pending: true, champsPending: false })));
+
+    // Phase 1 — profiles only (3-4 calls each, fast)
+    const profiles = new Array(slots.length).fill(null);
     for (let i = 0; i < slots.length; i++) {
-      if (i > 0) await new Promise(r => setTimeout(r, 600));
-      const result = await fetchPlayerData(slots[i], plat);
-      setResults(prev => prev.map((r, idx) => idx === i ? { ...result, pending: false } : r));
+      if (i > 0) await new Promise(r => setTimeout(r, 300));
+
+      const parsed = parseSlot(slots[i]);
+      if (!parsed) {
+        setResults(prev => prev.map((r, idx) =>
+          idx === i ? { data: null, error: null, pending: false, champsPending: false } : r
+        ));
+        continue;
+      }
+      if (parsed.error) {
+        setResults(prev => prev.map((r, idx) =>
+          idx === i ? { data: null, error: parsed.error, pending: false, champsPending: false } : r
+        ));
+        continue;
+      }
+
+      try {
+        const profile = await fetchSummoner(parsed.gameName, parsed.tagLine, region, plat, false);
+        profiles[i] = profile;
+        setResults(prev => prev.map((r, idx) =>
+          idx === i
+            ? { data: { ...profile, champStats: [] }, error: null, pending: false, champsPending: true }
+            : r
+        ));
+      } catch (err) {
+        setResults(prev => prev.map((r, idx) =>
+          idx === i ? { data: null, error: formatError(err.message), pending: false, champsPending: false } : r
+        ));
+      }
     }
+
+    // Phase 2 — ranked matches (10 parallel calls each, rate-limit sensitive)
+    let first = true;
+    for (let i = 0; i < slots.length; i++) {
+      if (!profiles[i]) continue;
+      if (!first) await new Promise(r => setTimeout(r, 800));
+      first = false;
+
+      try {
+        const matches    = await fetchMatches(profiles[i].account.puuid, region, 420, 0, 10);
+        const champStats = computeChampStats(matches, profiles[i].account.puuid);
+        setResults(prev => prev.map((r, idx) =>
+          idx === i ? { ...r, data: { ...r.data, champStats }, champsPending: false } : r
+        ));
+      } catch (err) {
+        setResults(prev => prev.map((r, idx) =>
+          idx === i ? { ...r, champsPending: false, error: formatError(err.message) } : r
+        ));
+      }
+    }
+
     setLoading(false);
   }
 
@@ -94,7 +153,7 @@ export default function MultiSearchPage() {
       const picked = await fetchRandomFive(platform);
       setPlayers(picked);
     } catch (err) {
-      setFormErr(err.message);
+      setFormErr(formatError(err.message));
     } finally {
       setRandomizing(false);
     }
@@ -174,7 +233,7 @@ export default function MultiSearchPage() {
 
         {favourites.length > 0 && (
           <div className="ms-favourites">
-            <h3>Saved Searches</h3>
+            <h3>Saved Multi-Searches</h3>
             <div className="ms-fav-list">
               {favourites.map(fav => (
                 <div key={fav.id} className="ms-fav-item">
@@ -227,6 +286,7 @@ export default function MultiSearchPage() {
                 playerData={r.data}
                 error={r.error}
                 loading={r.pending}
+                champsPending={r.champsPending}
               />
             ))}
           </div>

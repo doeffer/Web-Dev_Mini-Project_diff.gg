@@ -8,18 +8,26 @@ function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
-export default function MultiSearchCard({ role, playerData, error, loading }) {
+export default function MultiSearchCard({ role, playerData, error, loading, champsPending }) {
   const [ddVersion, setDDVersion] = useState(null);
   const [champNames, setChampNames] = useState(null);
+  const [slowChamps, setSlowChamps] = useState(false);
+
   useEffect(() => {
     getDDVersion().then(setDDVersion);
     getChampionNameMap().then(setChampNames);
   }, []);
 
+  useEffect(() => {
+    if (!champsPending) { setSlowChamps(false); return; }
+    const t = setTimeout(() => setSlowChamps(true), 8000);
+    return () => clearTimeout(t);
+  }, [champsPending]);
+
   if (loading) return (
     <div className="ms-card">
       <div className="ms-card-role">{role}</div>
-      <div className="spinner" style={{ margin: '40px auto', width: 32, height: 32, borderWidth: 2 }} />
+      <div className="spinner spinner-sm" />
     </div>
   );
 
@@ -85,7 +93,12 @@ export default function MultiSearchCard({ role, playerData, error, loading }) {
 
       <div className="ms-champ-list">
         <span className="ms-section-label">Ranked Champions</span>
-        {champStats.length === 0 ? (
+        {champsPending ? (
+          <div className="ms-champs-loading">
+            <div className="spinner spinner-sm" style={{ margin: '12px auto' }} />
+            {slowChamps && <span className="ms-slow-champs">Waiting on rate limit…</span>}
+          </div>
+        ) : champStats.length === 0 ? (
           <span className="ms-no-data">No ranked games found</span>
         ) : (
           champStats.map((c, i) => {

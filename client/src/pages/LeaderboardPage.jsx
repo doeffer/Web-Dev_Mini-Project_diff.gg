@@ -33,7 +33,7 @@ function getCache(platform, queue) {
   const key = `${platform}:${queue}`;
   if (!caches[key]) {
     caches[key] = {
-      entries: [], names: {}, namesLoaded: 0, nameOffset: 0,
+      entries: [], names: {}, nameOffset: 0,
       nextBatchTime: 0, displayed: PAGE_SIZE,
       masterPage: 0, hasMore: true, fetched: false,
     };
@@ -48,7 +48,6 @@ export default function LeaderboardPage() {
   const c = getCache(platform, queue);
   const [entries, setEntries]         = useState(c.entries);
   const [names, setNames]             = useState(c.names);
-  const [namesLoaded, setNamesLoaded] = useState(c.namesLoaded);
   const [loadingNames, setLoadingNames] = useState(false);
   const [displayed, setDisplayed]     = useState(c.displayed);
   const [masterPage, setMasterPage]   = useState(c.masterPage);
@@ -68,7 +67,6 @@ export default function LeaderboardPage() {
     entriesRef.current = nc.entries;
     setEntries(nc.entries);
     setNames(nc.names);
-    setNamesLoaded(nc.namesLoaded);
     setDisplayed(nc.displayed);
     setMasterPage(nc.masterPage);
     setHasMore(nc.hasMore);
@@ -118,11 +116,11 @@ export default function LeaderboardPage() {
         if (!cancelled) {
           nc.names = { ...nc.names, ...result };
           nc.nameOffset += batch.length;
-          nc.namesLoaded = nc.nameOffset;
           setNames({ ...nc.names });
-          setNamesLoaded(nc.namesLoaded);
         }
-      } catch {}
+      } catch (err) {
+        if (!cancelled) setError(err.message);
+      }
 
       if (!cancelled) setLoadingNames(false);
       if (!cancelled && nc.nameOffset < entriesRef.current.length) {
@@ -178,7 +176,6 @@ export default function LeaderboardPage() {
   const displayName = entry => {
     const n = names[entry.puuid];
     if (n) return `${n.gameName}#${n.tagLine}`;
-    if (entry.summonerName) return entry.summonerName;
     return '—';
   };
 
@@ -209,17 +206,6 @@ export default function LeaderboardPage() {
 
       {!loading && !error && (
         <>
-          <div className="leaderboard-meta">
-            <span>{entries.length} players</span>
-            <span>
-              {namesLoaded >= entries.length
-                ? `All ${entries.length} names loaded`
-                : loadingNames
-                  ? `Loading names… (${namesLoaded}/${entries.length})`
-                  : `Names: ${namesLoaded}/${entries.length}`}
-            </span>
-          </div>
-
           <table className="leaderboard-table">
             <thead>
               <tr>
