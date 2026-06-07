@@ -57,6 +57,7 @@ export default function ChampionMastery({ puuid, platform }) {
                 <img
                   src={champImgUrl(champ.id, ddVersion)}
                   alt={champ.name}
+                  data-tooltip={champ.name}
                   className="mastery-champ-icon"
                   onError={e => { e.target.style.display = 'none'; }}
                 />

@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getDDVersion, getRuneMap,
+  getDDVersion, getRuneMap, getRuneNameMap,
+  getChampionNameMap, getItemNameMap, getSpellNameMap,
   champImgUrl, spellImgUrl, itemImgUrl, runeImgUrl,
   QUEUE_NAMES, timeAgo, formatDuration,
 } from '../utils/gameData';
 import ArenaMatchRow from './ArenaMatchRow';
 
-function Img({ src, alt, className }) {
+function Img({ src, alt, className, tooltip }) {
   if (!src) return <div className={`${className} img-missing`} />;
   return (
     <img
       src={src} alt={alt || ''} className={className}
+      data-tooltip={tooltip || undefined}
       onError={e => { e.target.style.visibility = 'hidden'; }}
     />
   );
@@ -54,27 +56,37 @@ function teamObjItems(teamData) {
   };
 }
 
-function ItemRow({ items, trinket, ddVersion, size = 'item-icon' }) {
+function ItemRow({ items, trinket, ddVersion, itemNames, size = 'item-icon' }) {
   return (
     <div className="mc-items">
       {items.map((id, i) => (
-        <Img key={i} src={ddVersion && id ? itemImgUrl(id, ddVersion) : null} className={size} />
+        <Img key={i} src={ddVersion && id ? itemImgUrl(id, ddVersion) : null}
+             tooltip={itemNames?.[id]} className={size} />
       ))}
       <div className="item-divider" />
-      <Img src={ddVersion && trinket ? itemImgUrl(trinket, ddVersion) : null} className={`${size} trinket`} />
+      <Img src={ddVersion && trinket ? itemImgUrl(trinket, ddVersion) : null}
+           tooltip={itemNames?.[trinket]} className={`${size} trinket`} />
     </div>
   );
 }
 
 function SRMatchRow({ match, puuid, platform }) {
   const [expanded, setExpanded] = useState(false);
-  const [ddVersion, setDDVersion] = useState(null);
-  const [runeMap, setRuneMap]     = useState(null);
+  const [ddVersion, setDDVersion]   = useState(null);
+  const [runeMap, setRuneMap]       = useState(null);
+  const [runeNames, setRuneNames]   = useState(null);
+  const [champNames, setChampNames] = useState(null);
+  const [itemNames, setItemNames]   = useState(null);
+  const [spellNames, setSpellNames] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getDDVersion().then(setDDVersion);
     getRuneMap().then(setRuneMap);
+    getRuneNameMap().then(setRuneNames);
+    getChampionNameMap().then(setChampNames);
+    getItemNameMap().then(setItemNames);
+    getSpellNameMap().then(setSpellNames);
   }, []);
 
   const me = match.info.participants.find(p => p.puuid === puuid);
@@ -91,7 +103,6 @@ function SRMatchRow({ match, puuid, platform }) {
 
   const blue = match.info.participants.filter(p => p.teamId === 100);
   const red  = match.info.participants.filter(p => p.teamId === 200);
-
   const maxDmg = Math.max(...match.info.participants.map(p => p.totalDamageDealtToChampions), 1);
 
   function goToPlayer(p, e) {
@@ -114,15 +125,20 @@ function SRMatchRow({ match, puuid, platform }) {
       return (
         <tr key={p.puuid} className={`${p.win ? 'detail-row-win' : 'detail-row-loss'}${isMe ? ' detail-row-me' : ''}`}>
           <td className="detail-champ">
-            <Img src={ddVersion ? champImgUrl(p.championName, ddVersion) : null} className="detail-champ-icon" />
+            <Img src={ddVersion ? champImgUrl(p.championName, ddVersion) : null}
+                 tooltip={champNames?.[p.championName]} className="detail-champ-icon" />
             <span className="detail-champ-level">{p.champLevel}</span>
           </td>
           <td className="detail-spells">
             <div className="detail-spells-runes">
-              <Img src={ddVersion ? spellImgUrl(p.summoner1Id, ddVersion) : null} className="detail-spell-icon" />
-              <Img src={ddVersion ? spellImgUrl(p.summoner2Id, ddVersion) : null} className="detail-spell-icon" />
-              <Img src={runeMap && pKstone ? runeImgUrl(runeMap[pKstone]) : null} className="detail-rune-icon" />
-              <Img src={runeMap && pSec    ? runeImgUrl(runeMap[pSec])    : null} className="detail-rune-icon" />
+              <Img src={ddVersion ? spellImgUrl(p.summoner1Id, ddVersion) : null}
+                   tooltip={spellNames?.[p.summoner1Id]} className="detail-spell-icon" />
+              <Img src={ddVersion ? spellImgUrl(p.summoner2Id, ddVersion) : null}
+                   tooltip={spellNames?.[p.summoner2Id]} className="detail-spell-icon" />
+              <Img src={runeMap && pKstone ? runeImgUrl(runeMap[pKstone]) : null}
+                   tooltip={runeNames?.[pKstone]} className="detail-rune-icon" />
+              <Img src={runeMap && pSec    ? runeImgUrl(runeMap[pSec])    : null}
+                   tooltip={runeNames?.[pSec]} className="detail-rune-icon" />
             </div>
           </td>
           <td className="detail-name">
@@ -143,7 +159,7 @@ function SRMatchRow({ match, puuid, platform }) {
           </td>
           <td className="detail-vision">{p.visionScore}</td>
           <td className="detail-items">
-            <ItemRow items={pItems} trinket={p.item6} ddVersion={ddVersion} size="detail-item-icon" />
+            <ItemRow items={pItems} trinket={p.item6} ddVersion={ddVersion} itemNames={itemNames} size="detail-item-icon" />
           </td>
         </tr>
       );
@@ -158,7 +174,6 @@ function SRMatchRow({ match, puuid, platform }) {
   return (
     <div className={`match-card ${isRemake ? 'remake' : me.win ? 'win' : 'loss'}`}>
 
-      {/* ── Compact summary row ── */}
       <div className="match-card-summary" onClick={() => setExpanded(e => !e)}>
 
         <div className="mc-result">
@@ -171,14 +186,19 @@ function SRMatchRow({ match, puuid, platform }) {
 
         <div className="mc-champ-block">
           <div className="mc-champ-wrap">
-            <Img src={ddVersion ? champImgUrl(me.championName, ddVersion) : null} alt={me.championName} className="mc-champ-icon" />
+            <Img src={ddVersion ? champImgUrl(me.championName, ddVersion) : null}
+                 alt={me.championName} tooltip={champNames?.[me.championName]} className="mc-champ-icon" />
             <span className="mc-champ-level">{me.champLevel}</span>
           </div>
           <div className="mc-spells-runes">
-            <Img src={ddVersion ? spellImgUrl(me.summoner1Id, ddVersion) : null} className="mc-spell-icon" />
-            <Img src={ddVersion ? spellImgUrl(me.summoner2Id, ddVersion) : null} className="mc-spell-icon" />
-            <Img src={runeMap && keystoneId ? runeImgUrl(runeMap[keystoneId]) : null} className="mc-rune-icon" />
-            <Img src={runeMap && secStyleId  ? runeImgUrl(runeMap[secStyleId])  : null} className="mc-rune-icon" />
+            <Img src={ddVersion ? spellImgUrl(me.summoner1Id, ddVersion) : null}
+                 tooltip={spellNames?.[me.summoner1Id]} className="mc-spell-icon" />
+            <Img src={ddVersion ? spellImgUrl(me.summoner2Id, ddVersion) : null}
+                 tooltip={spellNames?.[me.summoner2Id]} className="mc-spell-icon" />
+            <Img src={runeMap && keystoneId ? runeImgUrl(runeMap[keystoneId]) : null}
+                 tooltip={runeNames?.[keystoneId]} className="mc-rune-icon" />
+            <Img src={runeMap && secStyleId  ? runeImgUrl(runeMap[secStyleId])  : null}
+                 tooltip={runeNames?.[secStyleId]} className="mc-rune-icon" />
           </div>
         </div>
 
@@ -190,17 +210,21 @@ function SRMatchRow({ match, puuid, platform }) {
           <span className="mc-secondary">CS {cs}</span>
         </div>
 
-        <ItemRow items={items} trinket={me.item6} ddVersion={ddVersion} size="mc-item-icon" />
+        <ItemRow items={items} trinket={me.item6} ddVersion={ddVersion} itemNames={itemNames} size="mc-item-icon" />
 
         <div className="mc-mini-teams">
           <div className="mc-mini-row">
             {blue.map(p => (
-              <Img key={p.puuid} src={ddVersion ? champImgUrl(p.championName, ddVersion) : null} className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
+              <Img key={p.puuid} src={ddVersion ? champImgUrl(p.championName, ddVersion) : null}
+                   tooltip={champNames?.[p.championName]}
+                   className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
             ))}
           </div>
           <div className="mc-mini-row">
             {red.map(p => (
-              <Img key={p.puuid} src={ddVersion ? champImgUrl(p.championName, ddVersion) : null} className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
+              <Img key={p.puuid} src={ddVersion ? champImgUrl(p.championName, ddVersion) : null}
+                   tooltip={champNames?.[p.championName]}
+                   className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
             ))}
           </div>
         </div>
@@ -208,10 +232,8 @@ function SRMatchRow({ match, puuid, platform }) {
         <span className="mc-chevron">{expanded ? '▲' : '▼'}</span>
       </div>
 
-      {/* ── Expanded detail ── */}
       {expanded && (
         <div className="match-card-detail">
-
           <table className="detail-table">
             <thead>
               <tr>
@@ -238,19 +260,15 @@ function SRMatchRow({ match, puuid, platform }) {
                       </>); })()}
                     </div>
                     <div className="team-stats-mid">
-                      <StatBar
-                        label="Kills"
+                      <StatBar label="Kills"
                         blueVal={blueTeamData?.objectives.champion.kills ?? 0}
                         redVal={redTeamData?.objectives.champion.kills ?? 0}
-                        blueWin={blueWin}
-                      />
-                      <StatBar
-                        label="Gold"
+                        blueWin={blueWin} />
+                      <StatBar label="Gold"
                         blueVal={blue.reduce((s, p) => s + p.goldEarned, 0)}
                         redVal={red.reduce((s, p) => s + p.goldEarned, 0)}
                         blueWin={blueWin}
-                        formatFn={v => `${(v / 1000).toFixed(1)}k`}
-                      />
+                        formatFn={v => `${(v / 1000).toFixed(1)}k`} />
                     </div>
                     <div className={`team-obj-panel right ${blueWin ? 'loss' : 'win'}`}>
                       <span className="team-obj-outcome">{blueWin ? 'Defeat' : 'Victory'}</span>

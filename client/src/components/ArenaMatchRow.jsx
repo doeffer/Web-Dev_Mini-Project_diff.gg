@@ -1,26 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getDDVersion, getAugmentMap,
+  getDDVersion, getAugmentMap, getAugmentNameMap,
+  getChampionNameMap, getItemNameMap,
   champImgUrl, itemImgUrl,
   QUEUE_NAMES, timeAgo, formatDuration,
 } from '../utils/gameData';
 
-function Img({ src, alt, className }) {
+function Img({ src, alt, className, tooltip }) {
   if (!src) return <div className={`${className} img-missing`} />;
   return (
     <img
       src={src} alt={alt || ''} className={className}
+      data-tooltip={tooltip || undefined}
       onError={e => { e.target.style.visibility = 'hidden'; }}
     />
   );
 }
 
-function ItemRow({ items, ddVersion, size = 'item-icon' }) {
+function ItemRow({ items, ddVersion, itemNames, size = 'item-icon' }) {
   return (
     <div className="mc-items">
       {items.map((id, i) => (
-        <Img key={i} src={ddVersion && id ? itemImgUrl(id, ddVersion) : null} className={size} />
+        <Img key={i} src={ddVersion && id ? itemImgUrl(id, ddVersion) : null}
+             tooltip={itemNames?.[id]} className={size} />
       ))}
     </div>
   );
@@ -32,28 +35,34 @@ function ordinal(n) {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 
-function AugmentGrid({ p, augmentMap, iconClass, gridClass = 'mc-spells-runes' }) {
+function AugmentGrid({ p, augmentMap, augmentNames, iconClass, gridClass = 'mc-spells-runes' }) {
   const ids = [p.playerAugment1, p.playerAugment2, p.playerAugment3, p.playerAugment4]
     .filter(id => id && augmentMap?.[id]);
   if (!ids.length) return null;
   return (
     <div className={gridClass}>
       {ids.map((id, i) => (
-        <Img key={i} src={augmentMap[id]} className={iconClass} />
+        <Img key={i} src={augmentMap[id]} tooltip={augmentNames?.[id]} className={iconClass} />
       ))}
     </div>
   );
 }
 
 export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
-  const [expanded, setExpanded] = useState(false);
-  const [ddVersion, setDDVersion] = useState(null);
-  const [augmentMap, setAugmentMap] = useState(null);
+  const [expanded, setExpanded]       = useState(false);
+  const [ddVersion, setDDVersion]     = useState(null);
+  const [augmentMap, setAugmentMap]   = useState(null);
+  const [augmentNames, setAugmentNames] = useState(null);
+  const [champNames, setChampNames]   = useState(null);
+  const [itemNames, setItemNames]     = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     getDDVersion().then(setDDVersion);
     getAugmentMap().then(setAugmentMap);
+    getAugmentNameMap().then(setAugmentNames);
+    getChampionNameMap().then(setChampNames);
+    getItemNameMap().then(setItemNames);
   }, []);
 
   const me = match.info.participants.find(p => p.puuid === puuid);
@@ -65,17 +74,16 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
   const kdaRatio  = ((me.kills + me.assists) / Math.max(me.deaths, 1)).toFixed(2);
   const items     = [me.item0, me.item1, me.item2, me.item3, me.item4, me.item5, me.item6];
 
-  // Group participants into subteams, sorted by placement
   const subteamMap = {};
   for (const p of match.info.participants) {
     const id = p.playerSubteamId;
     if (!subteamMap[id]) subteamMap[id] = { id, placement: p.subteamPlacement, players: [] };
     subteamMap[id].players.push(p);
   }
-  const subteams = Object.values(subteamMap).sort((a, b) => a.placement - b.placement);
+  const subteams   = Object.values(subteamMap).sort((a, b) => a.placement - b.placement);
   const totalTeams = subteams.length;
   const myPlacement = me.subteamPlacement;
-  const cardClass = me.win ? 'win' : 'loss';
+  const cardClass  = me.win ? 'win' : 'loss';
   const maxDmg = Math.max(...match.info.participants.map(p => p.totalDamageDealtToChampions), 1);
 
   function goToPlayer(p, e) {
@@ -94,11 +102,13 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
     return (
       <tr key={p.puuid} className={isMe ? 'detail-row-me' : ''}>
         <td className="detail-champ">
-          <Img src={ddVersion ? champImgUrl(p.championName, ddVersion) : null} className="detail-champ-icon" />
+          <Img src={ddVersion ? champImgUrl(p.championName, ddVersion) : null}
+               tooltip={champNames?.[p.championName]} className="detail-champ-icon" />
           <span className="detail-champ-level">{p.champLevel}</span>
         </td>
         <td className="detail-spells">
-          <AugmentGrid p={p} augmentMap={augmentMap} gridClass="detail-augment-grid" iconClass="detail-augment-icon" />
+          <AugmentGrid p={p} augmentMap={augmentMap} augmentNames={augmentNames}
+            gridClass="detail-augment-grid" iconClass="detail-augment-icon" />
         </td>
         <td className="detail-name">
           {isMe
@@ -116,7 +126,7 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
           </div>
         </td>
         <td className="detail-items">
-          <ItemRow items={pItems} ddVersion={ddVersion} size="detail-item-icon" />
+          <ItemRow items={pItems} ddVersion={ddVersion} itemNames={itemNames} size="detail-item-icon" />
         </td>
       </tr>
     );
@@ -125,7 +135,6 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
   return (
     <div className={`match-card ${cardClass}`}>
 
-      {/* ── Compact summary row ── */}
       <div className="match-card-summary" onClick={() => setExpanded(e => !e)}>
 
         <div className="mc-result">
@@ -136,10 +145,11 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
 
         <div className="mc-champ-block">
           <div className="mc-champ-wrap">
-            <Img src={ddVersion ? champImgUrl(me.championName, ddVersion) : null} alt={me.championName} className="mc-champ-icon" />
+            <Img src={ddVersion ? champImgUrl(me.championName, ddVersion) : null}
+                 alt={me.championName} tooltip={champNames?.[me.championName]} className="mc-champ-icon" />
             <span className="mc-champ-level">{me.champLevel}</span>
           </div>
-          <AugmentGrid p={me} augmentMap={augmentMap} iconClass="mc-spell-icon" />
+          <AugmentGrid p={me} augmentMap={augmentMap} augmentNames={augmentNames} iconClass="mc-spell-icon" />
         </div>
 
         <div className="mc-stats">
@@ -150,15 +160,15 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
           <span className="mc-secondary">{ordinal(myPlacement)} of {totalTeams}</span>
         </div>
 
-        <ItemRow items={items} ddVersion={ddVersion} size="mc-item-icon" />
+        <ItemRow items={items} ddVersion={ddVersion} itemNames={itemNames} size="mc-item-icon" />
 
-        {/* Mini view: one row per subteam, sorted by placement */}
         <div className="mc-mini-teams">
           {subteams.map(team => (
             <div key={team.id} className="mc-mini-row">
               {team.players.map(p => (
                 <Img key={p.puuid} src={ddVersion ? champImgUrl(p.championName, ddVersion) : null}
-                  className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
+                     tooltip={champNames?.[p.championName]}
+                     className={`mc-mini-icon ${p.puuid === puuid ? 'mc-mini-me' : ''}`} />
               ))}
             </div>
           ))}
@@ -167,7 +177,6 @@ export default function ArenaMatchRow({ match, puuid, platform = 'euw1' }) {
         <span className="mc-chevron">{expanded ? '▲' : '▼'}</span>
       </div>
 
-      {/* ── Expanded detail ── */}
       {expanded && (
         <div className="match-card-detail">
           <table className="detail-table">

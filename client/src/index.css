@@ -204,6 +204,24 @@ nav.nav-expanded { height: 60px; }
 
 .deaths { color: var(--loss); }
 
+/* ─── Tooltip ─────────────────────────────────────────────────── */
+.tooltip-popup {
+  position: fixed;
+  transform: translate(-50%, calc(-100% - 6px));
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  color: var(--text-h);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
 /* ─── Search page ─────────────────────────────────────────────── */
 main > h1 {
   background: linear-gradient(100deg, var(--text-h) 0%, var(--gold) 100%);

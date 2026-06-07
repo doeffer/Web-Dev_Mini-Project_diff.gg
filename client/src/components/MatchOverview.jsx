@@ -67,6 +67,7 @@ export default function MatchOverview({ matches, puuid }) {
               <img
                 src={champImgUrl(c.name, ddVersion)}
                 alt={c.name}
+                data-tooltip={c.name}
                 className="ov-champ-icon"
                 onError={e => { e.target.style.visibility = 'hidden'; }}
               />

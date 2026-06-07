@@ -67,60 +67,143 @@ export function getDDVersion() {
   return _ddVersionPromise;
 }
 
+let _runesRawPromise = null;
+function getRawRunes() {
+  if (!_runesRawPromise)
+    _runesRawPromise = getDDVersion().then(v =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/runesReforged.json`).then(r => r.json())
+    );
+  return _runesRawPromise;
+}
+
 let _runeMapPromise = null;
 export function getRuneMap() {
-  if (!_runeMapPromise) {
-    _runeMapPromise = getDDVersion().then(version =>
-      fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/runesReforged.json`)
-        .then(r => r.json())
-        .then(styles => {
-          const map = {};
-          for (const style of styles) {
-            map[style.id] = style.icon;
-            for (const slot of style.slots)
-              for (const rune of slot.runes)
-                map[rune.id] = rune.icon;
-          }
-          return map;
-        })
-    );
-  }
+  if (!_runeMapPromise)
+    _runeMapPromise = getRawRunes().then(styles => {
+      const map = {};
+      for (const style of styles) {
+        map[style.id] = style.icon;
+        for (const slot of style.slots)
+          for (const rune of slot.runes)
+            map[rune.id] = rune.icon;
+      }
+      return map;
+    });
   return _runeMapPromise;
+}
+
+let _runeNameMapPromise = null;
+export function getRuneNameMap() {
+  if (!_runeNameMapPromise)
+    _runeNameMapPromise = getRawRunes().then(styles => {
+      const map = {};
+      for (const style of styles) {
+        map[style.id] = style.name;
+        for (const slot of style.slots)
+          for (const rune of slot.runes)
+            map[rune.id] = rune.name;
+      }
+      return map;
+    });
+  return _runeNameMapPromise;
+}
+
+let _champRawPromise = null;
+function getRawChamps() {
+  if (!_champRawPromise)
+    _champRawPromise = getDDVersion().then(v =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/champion.json`).then(r => r.json())
+    );
+  return _champRawPromise;
 }
 
 let _champIdMapPromise = null;
 export function getChampionIdMap() {
-  if (!_champIdMapPromise) {
-    _champIdMapPromise = getDDVersion().then(version =>
-      fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/en_US/champion.json`)
-        .then(r => r.json())
-        .then(json => {
-          const map = {};
-          for (const champ of Object.values(json.data))
-            map[parseInt(champ.key)] = { id: champ.id, name: champ.name };
-          return map;
-        })
-    );
-  }
+  if (!_champIdMapPromise)
+    _champIdMapPromise = getRawChamps().then(json => {
+      const map = {};
+      for (const champ of Object.values(json.data))
+        map[parseInt(champ.key)] = { id: champ.id, name: champ.name };
+      return map;
+    });
   return _champIdMapPromise;
+}
+
+let _champNameMapPromise = null;
+export function getChampionNameMap() {
+  if (!_champNameMapPromise)
+    _champNameMapPromise = getRawChamps().then(json => {
+      const map = {};
+      for (const champ of Object.values(json.data))
+        map[champ.id] = champ.name;
+      return map;
+    });
+  return _champNameMapPromise;
+}
+
+let _augmentRawPromise = null;
+function getRawAugments() {
+  if (!_augmentRawPromise)
+    _augmentRawPromise = fetch('https://raw.communitydragon.org/latest/cdragon/arena/en_us.json')
+      .then(r => r.json())
+      .then(data => data.augments || data);
+  return _augmentRawPromise;
 }
 
 let _augmentMapPromise = null;
 export function getAugmentMap() {
-  if (!_augmentMapPromise) {
-    _augmentMapPromise = fetch('https://raw.communitydragon.org/latest/cdragon/arena/en_us.json')
-      .then(r => r.json())
-      .then(data => {
-        const list = data.augments || data;
-        const map = {};
-        for (const aug of list) {
-          if (aug.iconSmall)
-            map[aug.id] = 'https://raw.communitydragon.org/latest/game/' + aug.iconSmall.toLowerCase();
-        }
-        return map;
-      });
-  }
+  if (!_augmentMapPromise)
+    _augmentMapPromise = getRawAugments().then(list => {
+      const map = {};
+      for (const aug of list)
+        if (aug.iconSmall)
+          map[aug.id] = 'https://raw.communitydragon.org/latest/game/' + aug.iconSmall.toLowerCase();
+      return map;
+    });
   return _augmentMapPromise;
+}
+
+let _augmentNameMapPromise = null;
+export function getAugmentNameMap() {
+  if (!_augmentNameMapPromise)
+    _augmentNameMapPromise = getRawAugments().then(list => {
+      const map = {};
+      for (const aug of list) map[aug.id] = aug.name;
+      return map;
+    });
+  return _augmentNameMapPromise;
+}
+
+let _itemNameMapPromise = null;
+export function getItemNameMap() {
+  if (!_itemNameMapPromise)
+    _itemNameMapPromise = getDDVersion().then(v =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/item.json`)
+        .then(r => r.json())
+        .then(json => {
+          const map = {};
+          for (const [id, item] of Object.entries(json.data))
+            map[parseInt(id)] = item.name;
+          return map;
+        })
+    );
+  return _itemNameMapPromise;
+}
+
+let _spellNameMapPromise = null;
+export function getSpellNameMap() {
+  if (!_spellNameMapPromise)
+    _spellNameMapPromise = getDDVersion().then(v =>
+      fetch(`https://ddragon.leagueoflegends.com/cdn/${v}/data/en_US/summoner.json`)
+        .then(r => r.json())
+        .then(json => {
+          const map = {};
+          for (const spell of Object.values(json.data))
+            map[parseInt(spell.key)] = spell.name;
+          return map;
+        })
+    );
+  return _spellNameMapPromise;
 }
 
 export function timeAgo(ms) {

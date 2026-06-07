@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { initTooltips } from './utils/tooltipManager';
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
 import TeamsPage from './pages/TeamsPage';
@@ -70,6 +71,8 @@ function Nav() {
 }
 
 export default function App() {
+  useEffect(() => { initTooltips(); }, []);
+
   return (
     <BrowserRouter>
       <SearchProvider>

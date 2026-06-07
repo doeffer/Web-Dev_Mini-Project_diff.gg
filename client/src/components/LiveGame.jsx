@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getDDVersion, champImgUrl, spellImgUrl, runeImgUrl, getChampionIdMap, getRuneMap, QUEUE_NAMES } from '../utils/gameData';
+import { getDDVersion, champImgUrl, spellImgUrl, runeImgUrl, getChampionIdMap, getRuneMap, getRuneNameMap, getSpellNameMap, QUEUE_NAMES } from '../utils/gameData';
 import { fetchLiveGame } from '../api';
 
 function Img({ src, alt, className }) {
@@ -11,17 +11,21 @@ export default function LiveGame({ puuid, platform }) {
   const [game, setGame] = useState(undefined); // undefined = loading, null = not in game
   const [ddVersion, setDDVersion] = useState(null);
   const [champMap, setChampMap] = useState(null);
-  const [runeMap, setRuneMap] = useState(null);
+  const [runeMap, setRuneMap]       = useState(null);
+  const [runeNames, setRuneNames]   = useState(null);
+  const [spellNames, setSpellNames] = useState(null);
   const [error, setError] = useState(null);
   const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchLiveGame(puuid, platform), getDDVersion(), getChampionIdMap(), getRuneMap()])
-      .then(([g, ver, cm, rm]) => {
+    Promise.all([fetchLiveGame(puuid, platform), getDDVersion(), getChampionIdMap(), getRuneMap(), getRuneNameMap(), getSpellNameMap()])
+      .then(([g, ver, cm, rm, rn, sn]) => {
         setGame(g);
         setDDVersion(ver);
         setChampMap(cm);
         setRuneMap(rm);
+        setRuneNames(rn);
+        setSpellNames(sn);
       })
       .catch(e => {
         if (e.message.includes('production API key')) setUnavailable(true);
@@ -57,14 +61,17 @@ export default function LiveGame({ puuid, platform }) {
       <div key={i} className={`live-player${isMe ? ' live-player-self' : ''}`}>
         <Img
           src={ddVersion && champ ? champImgUrl(champ.id, ddVersion) : null}
-          alt={champ?.name}
+          alt={champ?.name} data-tooltip={champ?.name}
           className="live-champ-icon"
         />
         <div className="live-spells">
-          <Img src={ddVersion ? spellImgUrl(p.spell1Id, ddVersion) : null} alt="" className="live-spell-icon" />
-          <Img src={ddVersion ? spellImgUrl(p.spell2Id, ddVersion) : null} alt="" className="live-spell-icon" />
+          <Img src={ddVersion ? spellImgUrl(p.spell1Id, ddVersion) : null} alt=""
+               data-tooltip={spellNames?.[p.spell1Id]} className="live-spell-icon" />
+          <Img src={ddVersion ? spellImgUrl(p.spell2Id, ddVersion) : null} alt=""
+               data-tooltip={spellNames?.[p.spell2Id]} className="live-spell-icon" />
         </div>
-        <Img src={keystonePath ? runeImgUrl(keystonePath) : null} alt="" className="live-rune-icon" />
+        <Img src={keystonePath ? runeImgUrl(keystonePath) : null} alt=""
+             data-tooltip={keystone ? runeNames?.[keystone] : undefined} className="live-rune-icon" />
         <span className="live-player-name">{displayName}</span>
       </div>
     );
