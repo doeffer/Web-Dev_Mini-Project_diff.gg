@@ -281,7 +281,7 @@ export default function MultiSearchPage() {
                       </div>
                       <button className="ms-fav-load" onClick={() => handleLoadFav(fav)}>
                         <span className="ms-fav-name">{fav.name}</span>
-                        <span className="ms-fav-region">{fav.platform.toUpperCase()}</span>
+                        <span className="ms-fav-region">{PLATFORMS.find(p => p.value === fav.platform)?.label ?? fav.platform.toUpperCase()}</span>
                         <span className="ms-fav-players">{fav.players.filter(Boolean).join(' · ')}</span>
                       </button>
                       <button className="ms-fav-edit"   onClick={() => { setEditingFavId(fav.id); setEditingFavName(fav.name); }} title="Rename">✎</button>

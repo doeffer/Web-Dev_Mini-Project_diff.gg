@@ -286,7 +286,7 @@ export default function SearchPage() {
                       onClick={() => navigate(`/teams?fav=${fav.id}`)}
                     >
                       <span className="history-name">{fav.name}</span>
-                      <span className="history-platform">{fav.platform.toUpperCase()}</span>
+                      <span className="history-platform">{PLATFORMS.find(p => p.value === fav.platform)?.label ?? fav.platform.toUpperCase()}</span>
                     </button>
                   ))
               }
