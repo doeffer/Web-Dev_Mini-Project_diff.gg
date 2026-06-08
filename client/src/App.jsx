@@ -1,5 +1,27 @@
 import { useState, useEffect } from 'react';
 import { initTooltips } from './utils/tooltipManager';
+
+const HISTORY_KEY = 'diffgg_search_history';
+if (!localStorage.getItem(HISTORY_KEY)) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify([
+    { gameName: 'Hide on bush', tagLine: 'KR1',   platform: 'kr',   puuid: null, timestamp: Date.now() - 1000 * 60 * 5  },
+    { gameName: 'Vyo',          tagLine: 'LAN1',  platform: 'la1',  puuid: null, timestamp: Date.now() - 1000 * 60 * 20 },
+    { gameName: 'kceb',         tagLine: '2626',  platform: 'euw1', puuid: null, timestamp: Date.now() - 1000 * 60 * 45 },
+    { gameName: 'TWTV DETDERT', tagLine: '12MAJ', platform: 'euw1', puuid: null, timestamp: Date.now() - 1000 * 60 * 90 },
+  ]));
+}
+
+const MS_FAV_KEY = 'diff-gg-ms-favs';
+if (!localStorage.getItem(MS_FAV_KEY)) {
+  localStorage.setItem(MS_FAV_KEY, JSON.stringify([
+    {
+      id: 1,
+      name: 'Sørby Chamoy',
+      platform: 'euw1',
+      players: ['Komfuret#EUW', 'Fryseren#Mango', 'Lasopp#Mango', 'døffer#1111', 'cat burger#6350'],
+    },
+  ]));
+}
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import SearchPage from './pages/SearchPage';
 import MultiSearchPage from './pages/MultiSearchPage';

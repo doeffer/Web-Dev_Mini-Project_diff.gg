@@ -148,7 +148,7 @@ nav.nav-expanded { height: 60px; }
 .nav-search-form button { flex-shrink: 0; font-size: 13px; padding: 6px 14px; }
 
 .nav-brand {
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.03em;
   text-decoration: none;
@@ -205,9 +205,10 @@ nav.nav-expanded { height: 60px; }
 }
 
 .slow-load-msg {
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: 15px;
+  color: var(--gold);
   padding: 8px 0;
+  text-align: center;
 }
 
 .deaths { color: var(--loss); }
@@ -254,8 +255,18 @@ main > h1 {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  overflow: hidden;
   justify-content: flex-start;
-  padding-top: 12vh;
+  padding-top: 9vh;
+}
+.search-hero-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/herocardbg.png') center / cover no-repeat;
+  opacity: 0.05;
+  pointer-events: none;
 }
 
 .search-hero {
@@ -268,7 +279,7 @@ main > h1 {
 }
 
 .hero-title {
-  font-size: 52px;
+  font-size: 64px;
   font-weight: 800;
   letter-spacing: -0.04em;
   background: linear-gradient(100deg, var(--text-h) 0%, var(--gold) 100%);
@@ -1595,3 +1606,71 @@ legend {
   background: var(--loss-dim);
   border-color: transparent;
 }
+
+.ms-fav-edit {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  border-radius: 0;
+}
+.ms-fav-edit:hover:not(:disabled) {
+  color: var(--gold);
+  background: var(--gold-dim);
+  border-color: transparent;
+}
+
+.ms-fav-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.ms-fav-reorder button {
+  width: 20px;
+  height: 14px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 8px;
+  line-height: 1;
+  border-radius: 2px;
+}
+.ms-fav-reorder button:hover:not(:disabled) {
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+.ms-fav-reorder button:disabled { opacity: 0.2; cursor: default; }
+
+.ms-fav-item-editing {
+  gap: 6px;
+}
+
+.ms-fav-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  padding: 4px 8px;
+  height: 32px;
+}
+
+.ms-fav-confirm,
+.ms-fav-cancel {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  border-radius: 0;
+}
+.ms-fav-confirm { color: var(--win); }
+.ms-fav-confirm:hover:not(:disabled) { background: var(--win-dim); border-color: transparent; }
+.ms-fav-cancel  { color: var(--text-dim); }
+.ms-fav-cancel:hover:not(:disabled)  { color: var(--loss); background: var(--loss-dim); border-color: transparent; }

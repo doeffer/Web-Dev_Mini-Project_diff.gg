@@ -63,9 +63,11 @@ export default function MultiSearchPage() {
   const [loading,     setLoading]     = useState(false);
   const [randomizing, setRandomizing] = useState(false);
   const [formErr,     setFormErr]     = useState(null);
-  const [favourites,  setFavourites]  = useState(loadFavs);
-  const [saveName,    setSaveName]    = useState('');
-  const [showSave,    setShowSave]    = useState(false);
+  const [favourites,    setFavourites]    = useState(loadFavs);
+  const [saveName,      setSaveName]      = useState('');
+  const [showSave,      setShowSave]      = useState(false);
+  const [editingFavId,  setEditingFavId]  = useState(null);
+  const [editingFavName,setEditingFavName]= useState('');
 
   useEffect(() => {
     const favId = searchParams.get('fav');
@@ -169,7 +171,7 @@ export default function MultiSearchPage() {
   function handleSave() {
     if (!saveName.trim()) return;
     const fav = { id: Date.now(), name: saveName.trim(), platform, players: [...players] };
-    const updated = [fav, ...favourites];
+    const updated = [...favourites, fav];
     setFavourites(updated);
     localStorage.setItem(FAV_KEY, JSON.stringify(updated));
     setSaveName('');
@@ -188,8 +190,25 @@ export default function MultiSearchPage() {
     localStorage.setItem(FAV_KEY, JSON.stringify(updated));
   }
 
+  function moveFav(index, dir) {
+    const next = index + dir;
+    if (next < 0 || next >= favourites.length) return;
+    const updated = [...favourites];
+    [updated[index], updated[next]] = [updated[next], updated[index]];
+    setFavourites(updated);
+    localStorage.setItem(FAV_KEY, JSON.stringify(updated));
+  }
+
+  function saveRename(id) {
+    if (!editingFavName.trim()) return;
+    const updated = favourites.map(f => f.id === id ? { ...f, name: editingFavName.trim() } : f);
+    setFavourites(updated);
+    localStorage.setItem(FAV_KEY, JSON.stringify(updated));
+    setEditingFavId(null);
+  }
+
   return (
-    <main>
+    <main className="ms-page">
       <h1>Multi-Search</h1>
 
       <div className="ms-top-layout">
@@ -231,29 +250,48 @@ export default function MultiSearchPage() {
           {formErr && <p className="error">{formErr}</p>}
         </form>
 
-        {favourites.length > 0 && (
-          <div className="ms-favourites">
+        <div className="ms-favourites">
             <h3>Saved Multi-Searches</h3>
             <div className="ms-fav-list">
-              {favourites.map(fav => (
-                <div key={fav.id} className="ms-fav-item">
-                  <button className="ms-fav-load" onClick={() => handleLoadFav(fav)}>
-                    <span className="ms-fav-name">{fav.name}</span>
-                    <span className="ms-fav-region">{fav.platform.toUpperCase()}</span>
-                    <span className="ms-fav-players">
-                      {fav.players.filter(Boolean).join(' · ')}
-                    </span>
-                  </button>
-                  <button
-                    className="ms-fav-delete"
-                    onClick={() => deleteFav(fav.id)}
-                    title="Remove"
-                  >×</button>
+              {favourites.length === 0 && (
+                <span className="ms-no-data" style={{ padding: '8px 0' }}>No saved searches yet</span>
+              )}
+              {favourites.map((fav, i) => (
+                <div key={fav.id} className={`ms-fav-item${editingFavId === fav.id ? ' ms-fav-item-editing' : ''}`}>
+                  {editingFavId === fav.id ? (
+                    <>
+                      <input
+                        className="ms-fav-rename-input"
+                        value={editingFavName}
+                        onChange={e => setEditingFavName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') saveRename(fav.id);
+                          if (e.key === 'Escape') setEditingFavId(null);
+                        }}
+                        autoFocus
+                      />
+                      <button className="ms-fav-confirm" onClick={() => saveRename(fav.id)} title="Save">✓</button>
+                      <button className="ms-fav-cancel"  onClick={() => setEditingFavId(null)} title="Cancel">✕</button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="ms-fav-reorder">
+                        <button onClick={() => moveFav(i, -1)} disabled={i === 0} title="Move up">▲</button>
+                        <button onClick={() => moveFav(i, 1)}  disabled={i === favourites.length - 1} title="Move down">▼</button>
+                      </div>
+                      <button className="ms-fav-load" onClick={() => handleLoadFav(fav)}>
+                        <span className="ms-fav-name">{fav.name}</span>
+                        <span className="ms-fav-region">{fav.platform.toUpperCase()}</span>
+                        <span className="ms-fav-players">{fav.players.filter(Boolean).join(' · ')}</span>
+                      </button>
+                      <button className="ms-fav-edit"   onClick={() => { setEditingFavId(fav.id); setEditingFavName(fav.name); }} title="Rename">✎</button>
+                      <button className="ms-fav-delete" onClick={() => deleteFav(fav.id)} title="Remove">×</button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        )}
       </div>
 
       {results && (

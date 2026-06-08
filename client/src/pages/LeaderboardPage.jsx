@@ -1,24 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchLeaderboardTop, fetchLeaderboardMaster, fetchNames } from '../api';
+import { PLATFORMS } from '../utils/constants';
 
 const PAGE_SIZE = 500;
 const NAME_BATCH = 15;
 const BATCH_INTERVAL = 24000;
-
-const PLATFORMS = [
-  { value: 'euw1', label: 'EUW'  },
-  { value: 'eun1', label: 'EUNE' },
-  { value: 'na1',  label: 'NA'   },
-  { value: 'kr',   label: 'KR'   },
-  { value: 'br1',  label: 'BR'   },
-  { value: 'la1',  label: 'LAN'  },
-  { value: 'la2',  label: 'LAS'  },
-  { value: 'tr1',  label: 'TR'   },
-  { value: 'ru',   label: 'RU'   },
-  { value: 'jp1',  label: 'JP'   },
-  { value: 'oc1',  label: 'OCE'  },
-];
 
 const QUEUES = [
   { value: 'RANKED_SOLO_5x5', label: 'Solo/Duo' },
@@ -48,7 +35,6 @@ export default function LeaderboardPage() {
   const c = getCache(platform, queue);
   const [entries, setEntries]         = useState(c.entries);
   const [names, setNames]             = useState(c.names);
-  const [loadingNames, setLoadingNames] = useState(false);
   const [displayed, setDisplayed]     = useState(c.displayed);
   const [masterPage, setMasterPage]   = useState(c.masterPage);
   const [hasMore, setHasMore]         = useState(c.hasMore);
@@ -71,7 +57,6 @@ export default function LeaderboardPage() {
     setMasterPage(nc.masterPage);
     setHasMore(nc.hasMore);
     setLoading(!nc.fetched);
-    setLoadingNames(false);
     setError(null);
   }, [platform, queue]);
 
@@ -109,7 +94,6 @@ export default function LeaderboardPage() {
       if (batch.length === 0) return;
 
       nc.nextBatchTime = Date.now() + BATCH_INTERVAL;
-      setLoadingNames(true);
 
       try {
         const result = await fetchNames(batch);
@@ -122,7 +106,6 @@ export default function LeaderboardPage() {
         if (!cancelled) setError(err.message);
       }
 
-      if (!cancelled) setLoadingNames(false);
       if (!cancelled && nc.nameOffset < entriesRef.current.length) {
         const nextIn = Math.max(0, nc.nextBatchTime - Date.now());
         timeoutRef.current = setTimeout(loadBatch, nextIn);

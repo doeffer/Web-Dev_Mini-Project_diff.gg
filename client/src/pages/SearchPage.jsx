@@ -150,7 +150,7 @@ export default function SearchPage() {
         .finally(() => { if (mountedRef.current) setLoading(false); });
     } else if (riotId) {
       setInput(riotId);
-      search(riotId);
+      search(riotId, paramPlatform);
     }
   }, [searchParams]);
 
@@ -262,9 +262,12 @@ export default function SearchPage() {
                 ? <span className="shortcut-coming">No recent searches</span>
                 : getHistory().map(entry => (
                     <button
-                      key={entry.puuid}
+                      key={entry.puuid ?? `${entry.gameName}#${entry.tagLine}`}
                       className="history-entry"
-                      onClick={() => navigate(`/?puuid=${encodeURIComponent(entry.puuid)}&platform=${entry.platform}`)}
+                      onClick={() => entry.puuid
+                        ? navigate(`/?puuid=${encodeURIComponent(entry.puuid)}&platform=${entry.platform}`)
+                        : navigate(`/?riotId=${encodeURIComponent(entry.gameName + '#' + entry.tagLine)}&platform=${entry.platform}`)
+                      }
                     >
                       <span className="history-name">{entry.gameName}<span className="history-tag">#{entry.tagLine}</span></span>
                       <span className="history-platform">{PLATFORMS.find(p => p.value === entry.platform)?.label ?? entry.platform}</span>
