@@ -1,8 +1,9 @@
 {
-  "name": "soerby-gg",
+  "name": "diff-gg",
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "npm install --prefix server && npm install --prefix client",
     "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\""
   },
   "devDependencies": {
